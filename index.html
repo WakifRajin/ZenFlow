@@ -56,6 +56,28 @@
 html{font-size:16px;-webkit-font-smoothing:antialiased}
 body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:var(--app-vh);overflow-x:hidden}
 
+body.theme-light{
+  --bg:#f3f6ff;
+  --bg2:#ffffff;
+  --bg3:#eef2fb;
+  --bg4:#e4e9f6;
+  --surface:#dde5f5;
+  --surface2:#d0daef;
+  --border:rgba(30,45,85,0.1);
+  --border2:rgba(30,45,85,0.18);
+  --text:#1c2544;
+  --text2:#40507c;
+  --text3:#6b789b;
+  --accent-glow:rgba(124,106,247,0.2);
+  --green-dim:rgba(74,222,128,0.2);
+  --red-dim:rgba(248,113,113,0.2);
+  --orange-dim:rgba(251,146,60,0.2);
+  --cyan-dim:rgba(34,211,238,0.2);
+  --yellow-dim:rgba(251,191,36,0.2);
+  --shadow:0 8px 24px rgba(23,38,77,0.12);
+  --shadow-lg:0 18px 48px rgba(23,38,77,0.16);
+}
+
 /* SCROLLBAR */
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -522,6 +544,16 @@ option{background:var(--surface)}
 .home-metric{padding:12px 14px;border-radius:12px;background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.12)}
 .home-metric-value{font-family:var(--font-mono);font-size:24px;line-height:1;color:var(--text)}
 .home-metric-label{font-size:11px;letter-spacing:0.6px;color:var(--text3);text-transform:uppercase;margin-top:6px}
+
+body.theme-light .topbar{background:linear-gradient(180deg,rgba(255,255,255,0.96),rgba(238,244,255,0.9));}
+body.theme-light .brand-pill{border-color:rgba(80,102,158,0.22);background:linear-gradient(90deg,rgba(124,106,247,0.16),rgba(34,211,238,0.16));}
+body.theme-light .home-hero{
+  background:
+    radial-gradient(circle at 14% 0%,rgba(124,106,247,0.2),rgba(124,106,247,0) 45%),
+    radial-gradient(circle at 82% 20%,rgba(34,211,238,0.18),rgba(34,211,238,0) 45%),
+    linear-gradient(140deg,#ffffff,#edf2ff);
+}
+body.theme-light .home-metric{background:rgba(255,255,255,0.76);border-color:var(--border)}
 
 /* AMBIENT SOUND INDICATOR */
 .ambient-badge{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;background:var(--bg3);border:1px solid var(--border);font-size:12px;color:var(--text3);cursor:pointer;transition:all 0.2s}
@@ -1199,8 +1231,15 @@ option{background:var(--surface)}
             </div>
           </div>
           <div class="settings-row">
+            <div><div class="settings-row-label">Theme Mode</div><div class="settings-row-sub">Switch between dark and light UI</div></div>
+            <select class="input" id="themeModeSelect" style="width:160px" onchange="setThemeMode(this.value)">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
+          </div>
+          <div class="settings-row">
             <div><div class="settings-row-label">Background</div><div class="settings-row-sub">Panel background style</div></div>
-            <select class="input" style="width:160px" onchange="setBgStyle(this.value)">
+            <select class="input" id="bgStyleSelect" style="width:160px" onchange="setBgStyle(this.value)">
               <option value="dark">Pure Dark</option>
               <option value="darker">Even Darker</option>
             </select>
@@ -1667,6 +1706,8 @@ let appState = {
   settings: {
     accent: '#7c6af7',
     accent2: '#a594ff',
+    theme: 'dark',
+    bgStyle: 'dark',
     sound: 'bell',
     volume: 70,
     ambient: null,
@@ -1714,6 +1755,7 @@ function loadState(){
   applyPersistedState(saved);
   // Apply settings
   applyAccent(appState.settings.accent, appState.settings.accent2||'#a594ff');
+  applyThemeMode(appState.settings.theme||'dark');
 }
 
 function saveState(){
@@ -3303,6 +3345,30 @@ function hexToRgba(hex, a){
   return `rgba(${r},${g},${b},${a})`;
 }
 
+function applyBgStyle(style){
+  const bgStyle = style==='darker' ? 'darker' : 'dark';
+  document.documentElement.style.setProperty('--bg',bgStyle==='darker'?'#060608':'#0a0a0f');
+  document.documentElement.style.setProperty('--bg2',bgStyle==='darker'?'#0c0c10':'#111118');
+}
+
+function applyThemeMode(mode){
+  const theme = mode==='light' ? 'light' : 'dark';
+  document.body.classList.toggle('theme-light', theme==='light');
+  if(theme==='dark') applyBgStyle(appState.settings.bgStyle||'dark');
+
+  const themeMeta=document.querySelector('meta[name="theme-color"]');
+  if(themeMeta) themeMeta.setAttribute('content', theme==='light' ? '#f3f6ff' : '#0a0a0f');
+
+  const bgSelect=document.getElementById('bgStyleSelect');
+  if(bgSelect) bgSelect.disabled = theme==='light';
+}
+
+function setThemeMode(mode){
+  appState.settings.theme = mode==='light' ? 'light' : 'dark';
+  applyThemeMode(appState.settings.theme);
+  saveState();
+}
+
 function renderSettings(){
   // Ambient sounds
   const sounds=[
@@ -3357,8 +3423,9 @@ function requestNotifications(){
 }
 
 function setBgStyle(v){
-  document.documentElement.style.setProperty('--bg',v==='darker'?'#060608':'#0a0a0f');
-  document.documentElement.style.setProperty('--bg2',v==='darker'?'#0c0c10':'#111118');
+  appState.settings.bgStyle = v==='darker' ? 'darker' : 'dark';
+  if((appState.settings.theme||'dark')==='dark') applyBgStyle(appState.settings.bgStyle);
+  saveState();
 }
 
 function exportData(){
@@ -3509,9 +3576,15 @@ function renderHomeHero(){
 
 function refreshUiFromState(){
   const s=appState.settings;
+  const theme = s.theme==='light' ? 'light' : 'dark';
   applyAccent(s.accent, s.accent2||'#a594ff');
+  applyThemeMode(theme);
   const soundSelectEl = document.getElementById('soundSelect');
   const volumeSliderEl = document.getElementById('volumeSlider');
+  const themeModeSelect = document.getElementById('themeModeSelect');
+  const bgStyleSelect = document.getElementById('bgStyleSelect');
+  if(themeModeSelect) themeModeSelect.value = theme;
+  if(bgStyleSelect) bgStyleSelect.value = s.bgStyle==='darker' ? 'darker' : 'dark';
   if(soundSelectEl){
     const allowed = new Set(['bell','chime','ding','beep','none']);
     soundSelectEl.value = allowed.has(s.sound) ? s.sound : 'bell';
