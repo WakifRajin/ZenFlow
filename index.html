@@ -517,8 +517,9 @@ option{background:var(--surface)}
 .brand-word{font-family:var(--font-display);font-size:15px;letter-spacing:0.2px}
 
 /* AUTH */
-.auth-corner-btn{max-width:220px;display:inline-flex;align-items:center;gap:8px;padding:7px 11px;margin-left:2px}
-.auth-corner-btn.auth-on{border-color:var(--accent);background:var(--accent-glow);color:var(--accent2)}
+.auth-corner-btn{max-width:220px;display:inline-flex;align-items:center;gap:8px;padding:7px 11px;margin-left:2px;border:0}
+.auth-corner-btn:hover{border:0}
+.auth-corner-btn.auth-on{border:0;background:var(--accent-glow);color:var(--accent2)}
 .auth-corner-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0}
 .auth-corner-btn.auth-on .auth-corner-dot{background:var(--green)}
 .auth-corner-avatar{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface2);font-size:11px;font-weight:600;color:var(--text2);flex-shrink:0}
@@ -604,7 +605,8 @@ body.theme-light .home-metric{background:rgba(255,255,255,0.76);border-color:var
   .topbar-left{min-width:0;display:flex;align-items:center;gap:8px;flex:1}
   .topbar-right{min-width:0;display:flex;align-items:center;gap:6px;justify-content:flex-end;flex-shrink:0}
   .topbar-date{display:none}
-  .ambient-badge{display:none}
+  .ambient-badge{display:flex;padding:4px 7px;gap:4px;max-width:126px}
+  .ambient-badge #ambientLabel{display:inline-block;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .topbar-right .btn-icon{display:none}
   .topbar-time{font-size:12px}
   .brand-pill{padding:5px 9px;gap:7px}
@@ -616,11 +618,13 @@ body.theme-light .home-metric{background:rgba(255,255,255,0.76);border-color:var
   .page{padding:14px}
   .topbar{padding:9px 10px}
   .topbar-time{display:none}
-  .brand-word{display:none}
+  .brand-word{display:inline;font-size:12px}
   .brand-pill{padding:5px 8px}
   .brand-mark{width:18px;height:18px;font-size:10px}
-  .auth-corner-btn{padding:6px 8px;max-width:136px}
-  .auth-corner-text{max-width:66px}
+  .ambient-badge{display:flex;padding:4px 6px;max-width:106px}
+  .ambient-badge #ambientLabel{max-width:58px;font-size:11px}
+  .auth-corner-btn{padding:5px 7px;max-width:42px;min-width:42px;justify-content:center}
+  .auth-corner-text{display:none}
   .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
   .form-row{grid-template-columns:1fr}
   .tracker-bar{flex-wrap:wrap}
@@ -641,10 +645,14 @@ body.theme-light .home-metric{background:rgba(255,255,255,0.76);border-color:var
   .nav-label{display:none}
   .topbar{padding:9px 10px}
   .topbar-right{gap:5px}
-  .auth-corner-btn{max-width:112px;padding:5px 7px;gap:6px}
+  .ambient-badge{max-width:96px;padding:4px 6px}
+  .ambient-badge #ambientLabel{max-width:50px}
+  .auth-corner-btn{max-width:40px;min-width:40px;padding:5px 6px;gap:0}
+  .auth-corner-dot{display:none}
   .auth-corner-avatar{width:18px;height:18px;font-size:10px}
-  .auth-corner-text{max-width:48px}
+  .auth-corner-text{display:none}
   .brand-pill{padding:5px 7px}
+  .brand-word{font-size:11px}
   .home-title{font-size:23px}
 }
 
@@ -656,6 +664,7 @@ body.theme-light .home-metric{background:rgba(255,255,255,0.76);border-color:var
 .ctx-menu{position:fixed;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:6px;z-index:2000;min-width:160px;box-shadow:var(--shadow-lg)}
 .ctx-item{padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;transition:background 0.15s}
 .ctx-item:hover{background:var(--surface)}
+.ctx-item.active{background:var(--surface);color:var(--text)}
 .ctx-item.danger{color:var(--red)}
 .ctx-divider{height:1px;background:var(--border);margin:4px 0}
 
@@ -781,12 +790,11 @@ body.theme-light .home-metric{background:rgba(255,255,255,0.76);border-color:var
       <div class="home-hero">
         <div class="home-hero-grid">
           <div>
-            <div class="home-eyebrow">ZenFlow Focus Suite</div>
             <div class="home-title" id="heroWelcomeTitle">Own your day with calm, intentional focus.</div>
             <div class="home-copy">Design your focus rhythm, track deep work, and keep progress synced without breaking flow.</div>
             <div class="home-actions">
               <button class="btn btn-primary" onclick="togglePomodoro()">Start Focus Session</button>
-              <button class="btn btn-ghost" onclick="openAuthModal()">Account & Sync</button>
+              <button class="btn btn-ghost" id="heroAccountBtn" onclick="openAuthModal()">Account & Sync</button>
             </div>
           </div>
           <div class="home-metrics">
@@ -1650,6 +1658,7 @@ let appState = {
     log: [],
     currentTask: '',
     timer: null,
+    targetEnd: null,
     autoBreak: false, autoWork: false,
     sound: true,
     garden: [] // {type,mins,date,task,abandoned}
@@ -1672,6 +1681,7 @@ let appState = {
     remaining: 300,
     running: false,
     timer: null,
+    targetEnd: null,
     presets: [
       {id:'p1',name:'Quick Task',h:0,m:5,s:0},
       {id:'p2',name:'Pomodoro',h:0,m:25,s:0},
@@ -1732,9 +1742,9 @@ const authState = {
 
 function getPersistedState(){
   return {
-    pomo: {...appState.pomo, timer:null, running:false},
+    pomo: {...appState.pomo, timer:null, running:false, targetEnd:null},
     todos: appState.todos,
-    timer: {...appState.timer, timer:null, running:false},
+    timer: {...appState.timer, timer:null, running:false, targetEnd:null},
     tracking: {...appState.tracking, timer:null, running:false},
     settings: appState.settings
   };
@@ -1742,9 +1752,9 @@ function getPersistedState(){
 
 function applyPersistedState(saved){
   if(!saved) return;
-  if(saved.pomo){Object.assign(appState.pomo, saved.pomo); appState.pomo.running=false; appState.pomo.timer=null;}
+  if(saved.pomo){Object.assign(appState.pomo, saved.pomo); appState.pomo.running=false; appState.pomo.timer=null; appState.pomo.targetEnd=null;}
   if(saved.todos) Object.assign(appState.todos, saved.todos);
-  if(saved.timer){Object.assign(appState.timer, saved.timer); appState.timer.running=false; appState.timer.timer=null;}
+  if(saved.timer){Object.assign(appState.timer, saved.timer); appState.timer.running=false; appState.timer.timer=null; appState.timer.targetEnd=null;}
   if(saved.tracking){Object.assign(appState.tracking, saved.tracking); appState.tracking.running=false; appState.tracking.timer=null;}
   if(saved.settings) Object.assign(appState.settings, saved.settings);
 }
@@ -2192,6 +2202,7 @@ function setPomoMode(mode, tabEl){
   if(p.running) return;
   p.mode = mode;
   p.remaining = getPomoTotal(mode);
+  p.targetEnd = null;
   document.querySelectorAll('.pomo-tab').forEach(t=>t.classList.remove('active'));
   if(tabEl) tabEl.classList.add('active');
   updatePomoDisplay();
@@ -2232,6 +2243,17 @@ function updatePomoDots(){
   }
 }
 
+function syncPomoRemaining(){
+  const p = appState.pomo;
+  if(!p.running || !p.targetEnd) return;
+  const nextRemaining = Math.max(0, Math.ceil((p.targetEnd - Date.now()) / 1000));
+  const elapsed = Math.max(0, p.remaining - nextRemaining);
+  if(elapsed>0 && p.mode==='work'){
+    p.totalFocusMins = (p.totalFocusMins||0) + elapsed/60;
+  }
+  p.remaining = nextRemaining;
+}
+
 function togglePomodoro(){
   const p = appState.pomo;
   p.running = !p.running;
@@ -2242,24 +2264,31 @@ function togglePomodoro(){
   const btn = document.getElementById('pomoBtnMain');
   btn.className = 'pomo-btn-main ' + (p.running?'pause':'play');
   if(p.running){
+    p.targetEnd = Date.now() + p.remaining*1000;
+    tickPomo();
     p.timer = setInterval(tickPomo, 1000);
   } else {
+    syncPomoRemaining();
     clearInterval(p.timer);
+    p.targetEnd = null;
+    updatePomoDisplay();
   }
   saveState();
 }
 
 function tickPomo(){
   const p = appState.pomo;
+  if(!p.running) return;
+  syncPomoRemaining();
   if(p.remaining>0){
-    p.remaining--;
-    if(p.mode==='work') p.totalFocusMins = (p.totalFocusMins||0) + 1/60;
     updatePomoDisplay();
-  } else {
-    clearInterval(p.timer);
-    p.running = false;
-    pomoComplete();
+    return;
   }
+  clearInterval(p.timer);
+  p.running = false;
+  p.targetEnd = null;
+  updatePomoDisplay();
+  pomoComplete();
 }
 
 function pomoComplete(){
@@ -2304,6 +2333,7 @@ function switchPomoMode(mode){
   const p = appState.pomo;
   p.mode = mode;
   p.remaining = getPomoTotal(mode);
+  p.targetEnd = null;
   const tabs = document.querySelectorAll('.pomo-tab');
   tabs.forEach(t=>t.classList.remove('active'));
   if(mode==='work') tabs[0]?.classList.add('active');
@@ -2314,7 +2344,12 @@ function switchPomoMode(mode){
 
 function skipPomodoro(){
   const p = appState.pomo;
-  if(p.running){clearInterval(p.timer); p.running=false;}
+  if(p.running){
+    syncPomoRemaining();
+    clearInterval(p.timer);
+    p.running=false;
+    p.targetEnd = null;
+  }
   if(p.mode==='work'){
     p.garden.push({type:'work',mins:p.workMins-(p.remaining/60),date:new Date().toISOString(),task:'',abandoned:true});
   }
@@ -2324,6 +2359,7 @@ function skipPomodoro(){
 function resetPomodoro(){
   const p = appState.pomo;
   if(p.running){clearInterval(p.timer); p.running=false;}
+  p.targetEnd = null;
   p.remaining = getPomoTotal(p.mode);
   document.getElementById('pomoBtnMain').className='pomo-btn-main play';
   document.getElementById('pomoPlayIcon').innerHTML=`<polygon points="5,3 19,12 5,21"></polygon>`;
@@ -2660,6 +2696,12 @@ function updateTimerFromInput(){
   }
 }
 
+function syncTimerRemaining(){
+  const t=appState.timer;
+  if(!t.running || !t.targetEnd) return;
+  t.remaining=Math.max(0, Math.ceil((t.targetEnd - Date.now()) / 1000));
+}
+
 function toggleTimer(){
   const t = appState.timer;
   if(t.remaining<=0&&!t.running){
@@ -2680,9 +2722,14 @@ function toggleTimer(){
     document.getElementById('timerStartBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:16px;height:16px"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`;
     document.getElementById('timerDisplay').className='timer-time-big running';
     document.getElementById('timerLabel').textContent='COUNTING DOWN';
+    t.targetEnd=Date.now()+t.remaining*1000;
+    tickTimer();
     t.timer=setInterval(tickTimer,1000);
   } else {
+    syncTimerRemaining();
     clearInterval(t.timer);
+    t.targetEnd=null;
+    document.getElementById('timerDisplay').textContent=formatHMS(t.remaining);
     document.getElementById('timerStartBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:16px;height:16px"><polygon points="5,3 19,12 5,21"/></svg> Resume`;
   }
   saveState();
@@ -2690,11 +2737,12 @@ function toggleTimer(){
 
 function tickTimer(){
   const t=appState.timer;
+  if(!t.running) return;
+  syncTimerRemaining();
   if(t.remaining>0){
-    t.remaining--;
     document.getElementById('timerDisplay').textContent=formatHMS(t.remaining);
   } else {
-    clearInterval(t.timer);t.running=false;
+    clearInterval(t.timer);t.running=false;t.targetEnd=null;
     document.getElementById('timerDisplay').textContent='00:00:00';
     document.getElementById('timerDisplay').className='timer-time-big done';
     document.getElementById('timerLabel').textContent='TIME\'S UP!';
@@ -2706,7 +2754,7 @@ function tickTimer(){
 
 function resetTimer(){
   const t=appState.timer;
-  clearInterval(t.timer);t.running=false;
+  clearInterval(t.timer);t.running=false;t.targetEnd=null;
   const h=parseInt(document.getElementById('timerH').value)||0;
   const m=parseInt(document.getElementById('timerM').value)||0;
   const s=parseInt(document.getElementById('timerS').value)||0;
@@ -3369,43 +3417,100 @@ function setThemeMode(mode){
   saveState();
 }
 
+const AMBIENT_SOUNDS = [
+  {id:'rain',name:'Rain',label:'🌧️ Rain',desc:'Steady rainfall'},
+  {id:'forest',name:'Forest',label:'🌲 Forest',desc:'Birds & breeze'},
+  {id:'cafe',name:'Cafe',label:'☕ Cafe',desc:'Ambient chatter'},
+  {id:'ocean',name:'Ocean',label:'🌊 Ocean',desc:'Waves crashing'},
+  {id:'fire',name:'Fireplace',label:'🔥 Fireplace',desc:'Crackling fire'},
+  {id:'white',name:'White Noise',label:'🔊 White Noise',desc:'Pure white noise'}
+];
+
+function getAmbientName(id){
+  return AMBIENT_SOUNDS.find(s=>s.id===id)?.name || 'Ambient';
+}
+
 function renderSettings(){
-  // Ambient sounds
-  const sounds=[
-    {id:'rain',label:'🌧️ Rain',desc:'Steady rainfall'},
-    {id:'forest',label:'🌲 Forest',desc:'Birds & breeze'},
-    {id:'cafe',label:'☕ Café',desc:'Ambient chatter'},
-    {id:'ocean',label:'🌊 Ocean',desc:'Waves crashing'},
-    {id:'fire',label:'🔥 Fireplace',desc:'Crackling fire'},
-    {id:'white',label:'🔊 White Noise',desc:'Pure white noise'}
-  ];
   const el=document.getElementById('ambientSoundsList');
-  el.innerHTML=sounds.map(s=>`
+  el.innerHTML=AMBIENT_SOUNDS.map(s=>`
     <div class="settings-row">
       <div><div class="settings-row-label">${s.label}</div><div class="settings-row-sub">${s.desc}</div></div>
-      <button class="btn ${appState.settings.ambient===s.id?'btn-primary':'btn-ghost'}" onclick="setAmbient('${s.id}',this)">
+      <button class="btn ${appState.settings.ambient===s.id?'btn-primary':'btn-ghost'}" onclick="setAmbient('${s.id}')">
         ${appState.settings.ambient===s.id?'Playing':'Play'}
       </button>
     </div>`).join('');
 }
 
-function setAmbient(id, btn){
-  if(appState.settings.ambient===id){
+function setAmbient(id, forcePlay=false){
+  if(!id){
     appState.settings.ambient=null;
     updateAmbientBadge(false);
-  } else {
-    appState.settings.ambient=id;
-    updateAmbientBadge(true, id);
-    toast(`Now playing: ${id}`,'info','🎵');
+    closeCtxMenu();
+    renderSettings();
+    saveState();
+    return;
   }
-  document.querySelectorAll('#ambientSoundsList .btn').forEach(b=>{b.className='btn btn-ghost';b.textContent='Play';});
-  if(appState.settings.ambient){btn.className='btn btn-primary';btn.textContent='Playing';}
+
+  const shouldPlay = forcePlay ? true : appState.settings.ambient!==id;
+  if(shouldPlay){
+    appState.settings.ambient=id;
+    const ambientName = getAmbientName(id);
+    updateAmbientBadge(true, ambientName);
+    toast(`Now playing: ${ambientName}`,'info','🎵');
+  } else {
+    appState.settings.ambient=null;
+    updateAmbientBadge(false);
+  }
+
+  closeCtxMenu();
+  renderSettings();
   saveState();
 }
 
 function toggleAmbient(){
-  if(appState.settings.ambient){setAmbient(appState.settings.ambient,null);}
-  else toast('Select an ambient sound in Settings','info','🎵');
+  const menu=document.getElementById('ctxMenu');
+  if(menu && menu.style.display==='block' && menu.dataset.mode==='ambient'){
+    closeCtxMenu();
+    return;
+  }
+  openAmbientPicker();
+}
+
+function openAmbientPicker(){
+  const menu=document.getElementById('ctxMenu');
+  const badge=document.getElementById('ambientBadge');
+  if(!menu || !badge) return;
+
+  const current = appState.settings.ambient;
+  menu.dataset.mode = 'ambient';
+  menu.innerHTML = AMBIENT_SOUNDS.map(s=>`
+    <div class="ctx-item ${current===s.id?'active':''}" onclick="setAmbient('${s.id}', true)">
+      <span>${current===s.id?'✓':'♪'}</span>
+      <span>${s.label}</span>
+    </div>
+  `).join('') + `
+    <div class="ctx-divider"></div>
+    <div class="ctx-item danger" onclick="setAmbient('')">Stop Ambient</div>
+  `;
+
+  menu.style.display='block';
+  menu.style.visibility='hidden';
+  const rect=badge.getBoundingClientRect();
+  const mw=menu.offsetWidth;
+  const mh=menu.offsetHeight;
+  const left=Math.max(8,Math.min(rect.right+window.scrollX-mw,window.scrollX+window.innerWidth-mw-8));
+  const top=Math.max(8,Math.min(rect.bottom+window.scrollY+8,window.scrollY+window.innerHeight-mh-8));
+  menu.style.left=`${left}px`;
+  menu.style.top=`${top}px`;
+  menu.style.visibility='visible';
+}
+
+function closeCtxMenu(){
+  const menu=document.getElementById('ctxMenu');
+  if(!menu) return;
+  menu.style.display='none';
+  menu.style.visibility='hidden';
+  menu.dataset.mode='';
 }
 
 function updateAmbientBadge(playing, label=''){
@@ -3564,14 +3669,23 @@ function renderHomeHero(){
   const minsEl = document.getElementById('heroTodayFocus');
   const sessionsEl = document.getElementById('heroTotalSessions');
   const streakEl = document.getElementById('heroStreakDays');
+  const accountBtn = document.getElementById('heroAccountBtn');
   if(titleEl){
     titleEl.textContent = authState.user
       ? `Welcome back, ${getDisplayNickname()}. Let's build momentum.`
       : 'Own your day with calm, intentional focus.';
   }
+  if(accountBtn) accountBtn.style.display = authState.user ? 'none' : 'inline-flex';
   if(minsEl) minsEl.textContent = `${todayMins}m`;
   if(sessionsEl) sessionsEl.textContent = `${sessions}`;
   if(streakEl) streakEl.textContent = `${streak}d`;
+}
+
+function syncRunningClocks(){
+  if(appState.pomo.running) tickPomo();
+  if(appState.timer.running) tickTimer();
+  if(appState.sw.running) tickSw();
+  if(appState.tracking.running) tickTracking();
 }
 
 function refreshUiFromState(){
@@ -3609,7 +3723,7 @@ function refreshUiFromState(){
   document.getElementById('timerM').value=Math.floor((t.total%3600)/60);
   document.getElementById('timerS').value=t.total%60;
   document.getElementById('timerDisplay').textContent=formatHMS(t.total);
-  if(appState.settings.ambient) updateAmbientBadge(true, appState.settings.ambient);
+  if(appState.settings.ambient) updateAmbientBadge(true, getAmbientName(appState.settings.ambient));
   else updateAmbientBadge(false);
   renderHomeHero();
 }
@@ -3631,11 +3745,25 @@ function init(){
   loadState();
   refreshUiFromState();
   initAuthIntegration();
+
+  document.addEventListener('visibilitychange', ()=>{
+    if(!document.hidden) syncRunningClocks();
+  });
+  window.addEventListener('focus', syncRunningClocks);
+
+  document.addEventListener('click', e=>{
+    const menu=document.getElementById('ctxMenu');
+    if(!menu || menu.style.display!=='block') return;
+    if(menu.contains(e.target) || e.target.closest('#ambientBadge')) return;
+    closeCtxMenu();
+  });
+  window.addEventListener('resize', closeCtxMenu);
+
   // Keyboard shortcuts
   document.addEventListener('keydown', e=>{
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
     if(e.code==='Space'){e.preventDefault();if(document.getElementById('page-pomodoro').classList.contains('active'))togglePomodoro();}
-    if(e.code==='Escape'){closeFocusMode();document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open'));}
+    if(e.code==='Escape'){closeFocusMode();closeCtxMenu();document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open'));}
   });
   // Title update
   setInterval(()=>{
