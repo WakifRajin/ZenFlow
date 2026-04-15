@@ -58,9 +58,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 .app{display:flex;min-height:var(--app-vh)}
 .sidebar{width:var(--sidebar-collapsed);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:6px;position:fixed;height:var(--app-vh);z-index:100;transition:width 0.3s cubic-bezier(0.4,0,0.2,1);overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
 .sidebar.expanded{width:var(--sidebar-expanded)}
-.sidebar-logo{width:44px;height:44px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;flex-shrink:0;cursor:pointer;transition:all 0.2s}
-.sidebar.expanded .sidebar-logo{width:192px;justify-content:flex-start;gap:12px;padding:0 12px;border-radius:var(--radius-sm)}
-.sidebar-logo svg{width:20px;height:20px;fill:white;display:block;flex-shrink:0}
+.sidebar-logo{width:44px;height:44px;background:linear-gradient(145deg,var(--bg3),var(--surface));border:1px solid var(--border2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;flex-shrink:0;cursor:pointer;transition:all 0.2s}
+.sidebar-logo:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.sidebar.expanded .sidebar-logo{width:192px;justify-content:flex-start;gap:10px;padding:0 12px;border-radius:var(--radius-sm)}
+.sidebar-brand-mark{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:linear-gradient(140deg,var(--accent),var(--accent2));font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:0.4px;color:white;flex-shrink:0}
+.sidebar-brand-copy{display:none;flex-direction:column;gap:2px;min-width:0}
+.sidebar.expanded .sidebar-brand-copy{display:flex}
+.sidebar-brand-name{font-family:var(--font-display);font-size:14px;line-height:1;color:var(--text)}
+.sidebar-brand-sub{font-family:var(--font-mono);font-size:10px;line-height:1;color:var(--text3);letter-spacing:0.9px;text-transform:uppercase}
+.sidebar-toggle-glyph{display:none;width:14px;height:14px;stroke:var(--text3);stroke-width:2.2;fill:none;flex-shrink:0;margin-left:auto}
+.sidebar.expanded .sidebar-toggle-glyph{display:block}
 .nav-item{width:44px;height:44px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;color:var(--text3);position:relative;flex-shrink:0;overflow:hidden}
 .sidebar.expanded .nav-item{width:192px;justify-content:flex-start;gap:12px;padding:0 12px}
 .nav-item:hover{background:var(--surface);color:var(--text2)}
@@ -68,7 +75,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-hei
 .nav-item svg{width:20px;height:20px;flex-shrink:0;display:block}
 .nav-label{font-family:var(--font-body);font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;max-width:0;opacity:0;transition:max-width 0.2s ease,opacity 0.2s ease}
 .sidebar.expanded .nav-label{max-width:140px;opacity:1}
-.sidebar-logo .nav-label{color:white}
 .nav-divider{width:32px;height:1px;background:var(--border);margin:8px 0;flex-shrink:0}
 .sidebar.expanded .nav-divider{width:192px}
 .sidebar-bottom{margin-top:auto}
@@ -469,12 +475,45 @@ option{background:var(--surface)}
 .align-center{align-items:center}
 
 /* TOP BAR */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:50}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(22,22,33,0.96),rgba(10,10,15,0.94));backdrop-filter:blur(8px);position:sticky;top:0;z-index:50}
 .topbar-left{display:flex;align-items:center;gap:16px}
 .topbar-right{display:flex;align-items:center;gap:10px}
 .topbar-left,.topbar-right{min-width:0}
 .topbar-time{font-family:var(--font-mono);font-size:14px;color:var(--text3)}
 .topbar-date{font-size:12px;color:var(--text3)}
+
+.brand-pill{display:flex;align-items:center;gap:10px;padding:6px 12px;border-radius:999px;background:linear-gradient(90deg,rgba(124,106,247,0.22),rgba(34,211,238,0.2));border:1px solid rgba(255,255,255,0.16)}
+.brand-mark{width:22px;height:22px;border-radius:6px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:white;font-family:var(--font-display);font-size:12px;font-weight:700;line-height:1}
+.brand-word{font-family:var(--font-display);font-size:15px;letter-spacing:0.2px}
+
+/* AUTH */
+.auth-corner-btn{max-width:220px;display:inline-flex;align-items:center;gap:8px;padding:7px 11px;margin-left:2px}
+.auth-corner-btn.auth-on{border-color:var(--accent);background:var(--accent-glow);color:var(--accent2)}
+.auth-corner-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.auth-corner-btn.auth-on .auth-corner-dot{background:var(--green)}
+.auth-corner-avatar{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface2);font-size:11px;font-weight:600;color:var(--text2);flex-shrink:0}
+.auth-corner-btn.auth-on .auth-corner-avatar{background:var(--accent);color:white}
+.auth-corner-text{display:inline-block;max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.auth-helper{font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.4}
+.auth-status{font-size:12px;color:var(--text3);margin-top:10px}
+.auth-mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--bg3);padding:6px;border-radius:12px;margin-bottom:14px;border:1px solid var(--border)}
+.auth-mode-btn{border:none;border-radius:8px;padding:9px 12px;background:transparent;color:var(--text3);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.auth-mode-btn:hover{background:var(--surface)}
+.auth-mode-btn.active{background:var(--surface2);color:var(--text)}
+.auth-form-note{font-size:11px;color:var(--text3);margin-top:8px}
+
+/* HOME HERO */
+.home-hero{position:relative;overflow:hidden;background:radial-gradient(circle at 14% 0%,rgba(124,106,247,0.3),rgba(124,106,247,0) 45%),radial-gradient(circle at 82% 20%,rgba(34,211,238,0.2),rgba(34,211,238,0) 45%),linear-gradient(140deg,#171722,#101016);border:1px solid rgba(255,255,255,0.14);border-radius:22px;padding:28px;margin-bottom:24px;box-shadow:var(--shadow)}
+.home-hero::after{content:'';position:absolute;inset:auto -40px -70px auto;width:190px;height:190px;border-radius:999px;background:radial-gradient(circle,rgba(255,255,255,0.15),rgba(255,255,255,0));pointer-events:none}
+.home-hero-grid{display:grid;grid-template-columns:1.2fr 0.8fr;gap:18px;align-items:start;position:relative;z-index:1}
+.home-eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:1.4px;color:var(--accent2);margin-bottom:10px;text-transform:uppercase}
+.home-title{font-family:var(--font-display);font-size:34px;line-height:1.05;letter-spacing:-0.8px;margin-bottom:12px;max-width:16ch}
+.home-copy{font-size:14px;color:var(--text2);max-width:45ch;line-height:1.55;margin-bottom:16px}
+.home-actions{display:flex;gap:10px;flex-wrap:wrap}
+.home-metrics{display:grid;grid-template-columns:1fr;gap:10px}
+.home-metric{padding:12px 14px;border-radius:12px;background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.12)}
+.home-metric-value{font-family:var(--font-mono);font-size:24px;line-height:1;color:var(--text)}
+.home-metric-label{font-size:11px;letter-spacing:0.6px;color:var(--text3);text-transform:uppercase;margin-top:6px}
 
 /* AMBIENT SOUND INDICATOR */
 .ambient-badge{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;background:var(--bg3);border:1px solid var(--border);font-size:12px;color:var(--text3);cursor:pointer;transition:all 0.2s}
@@ -505,6 +544,9 @@ option{background:var(--surface)}
   .todo-layout{grid-template-columns:1fr}
   .grid-3{grid-template-columns:1fr 1fr}
   .topbar{padding:14px 20px}
+  .home-hero-grid{grid-template-columns:1fr}
+  .home-title{font-size:30px;max-width:100%}
+  .home-metrics{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:780px){
   .sidebar{left:0;right:0;bottom:0;top:auto;width:100%;height:var(--mobile-nav-height);flex-direction:row;align-items:center;justify-content:flex-start;padding:8px 10px;gap:6px;border-right:none;border-top:1px solid var(--border);overflow-x:auto;overflow-y:hidden}
@@ -521,6 +563,8 @@ option{background:var(--surface)}
   .topbar{padding:12px 16px;flex-wrap:wrap;gap:10px;align-items:flex-start}
   .topbar-left,.topbar-right{width:100%}
   .topbar-right{justify-content:flex-end}
+  .auth-corner-btn{max-width:100%}
+  .brand-word{font-size:14px}
 }
 @media(max-width:600px){
   .page{padding:14px}
@@ -534,11 +578,18 @@ option{background:var(--surface)}
   .ring-time{font-size:44px}
   .timer-time-big{font-size:56px;letter-spacing:-2px}
   .sw-time{font-size:54px;letter-spacing:-2px}
+  .home-hero{padding:20px}
+  .home-title{font-size:26px}
+  .home-copy{font-size:13px}
+  .home-metrics{grid-template-columns:1fr}
 }
 @media(max-width:420px){
   .nav-item{min-width:50px;padding:0 8px}
   .nav-label{display:none}
   .ambient-badge{font-size:11px;padding:4px 8px}
+  .auth-corner-text{max-width:110px}
+  .brand-pill{padding:6px 10px}
+  .home-title{font-size:23px}
 }
 
 /* DRAG OVER */
@@ -596,9 +647,13 @@ option{background:var(--surface)}
 <div class="app">
   <!-- SIDEBAR -->
   <nav class="sidebar" id="sidebar">
-    <div class="sidebar-logo" onclick="toggleSidebar()">
-      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-12h2v5h-2zm0 6h2v2h-2z"/></svg>
-      <span class="nav-label">Collapse</span>
+    <div class="sidebar-logo" onclick="toggleSidebar()" title="Toggle sidebar">
+      <span class="sidebar-brand-mark">ZF</span>
+      <div class="sidebar-brand-copy">
+        <span class="sidebar-brand-name">ZenFlow</span>
+        <span class="sidebar-brand-sub">Focus Suite</span>
+      </div>
+      <svg class="sidebar-toggle-glyph" viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>
     </div>
 
     <div class="nav-item active" onclick="navigate('pomodoro')" data-page="pomodoro" title="Pomodoro">
@@ -640,6 +695,10 @@ option{background:var(--surface)}
     <!-- TOPBAR -->
     <div class="topbar">
       <div class="topbar-left">
+        <div class="brand-pill">
+          <span class="brand-mark">Z</span>
+          <span class="brand-word">ZenFlow</span>
+        </div>
         <span class="topbar-time text-mono" id="clock">00:00:00</span>
         <span class="topbar-date" id="topdate"></span>
       </div>
@@ -653,11 +712,43 @@ option{background:var(--surface)}
         <button class="btn btn-ghost btn-icon" onclick="openFocusMode()" title="Focus Mode">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
         </button>
+        <button class="btn btn-ghost auth-corner-btn" id="authCornerBtn" onclick="openAuthModal()" title="Optional account login">
+          <span class="auth-corner-dot"></span>
+          <span class="auth-corner-avatar" id="authCornerAvatar">Z</span>
+          <span class="auth-corner-text" id="authCornerText">Login</span>
+        </button>
       </div>
     </div>
 
     <!-- ===================== POMODORO ===================== -->
     <div class="page active" id="page-pomodoro">
+      <div class="home-hero">
+        <div class="home-hero-grid">
+          <div>
+            <div class="home-eyebrow">ZenFlow Focus Suite</div>
+            <div class="home-title" id="heroWelcomeTitle">Own your day with calm, intentional focus.</div>
+            <div class="home-copy">Design your focus rhythm, track deep work, and keep progress synced without breaking flow.</div>
+            <div class="home-actions">
+              <button class="btn btn-primary" onclick="togglePomodoro()">Start Focus Session</button>
+              <button class="btn btn-ghost" onclick="openAuthModal()">Account & Sync</button>
+            </div>
+          </div>
+          <div class="home-metrics">
+            <div class="home-metric">
+              <div class="home-metric-value" id="heroTodayFocus">0m</div>
+              <div class="home-metric-label">Today Focused</div>
+            </div>
+            <div class="home-metric">
+              <div class="home-metric-value" id="heroTotalSessions">0</div>
+              <div class="home-metric-label">Total Sessions</div>
+            </div>
+            <div class="home-metric">
+              <div class="home-metric-value" id="heroStreakDays">0d</div>
+              <div class="home-metric-label">Current Streak</div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="page-title">Pomodoro Timer</div>
       <div class="page-subtitle">Stay focused with structured work intervals</div>
       <div class="pomodoro-layout">
@@ -1099,7 +1190,7 @@ option{background:var(--surface)}
           </div>
           <div class="settings-row">
             <div><div class="settings-row-label">Notification Sound</div><div class="settings-row-sub">Play sound on timer complete</div></div>
-            <select class="input" id="soundSelect" style="width:160px" onchange="saveSettings()">
+            <select class="input" id="soundSelect" style="width:160px" onchange="saveSettings('soundSelect')">
               <option value="bell">Bell</option>
               <option value="chime">Chime</option>
               <option value="ding">Ding</option>
@@ -1109,7 +1200,7 @@ option{background:var(--surface)}
           </div>
           <div class="settings-row">
             <div><div class="settings-row-label">Volume</div></div>
-            <input type="range" min="0" max="100" value="70" id="volumeSlider" style="width:120px" oninput="saveSettings()">
+            <input type="range" min="0" max="100" value="70" id="volumeSlider" style="width:120px" oninput="saveSettings('volumeSlider')">
           </div>
         </div>
         <div class="settings-section">
@@ -1145,6 +1236,53 @@ option{background:var(--surface)}
 </div>
 
 <!-- MODALS -->
+<div class="modal-overlay" id="modalAuth">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">ZenFlow Account</div>
+      <button class="modal-close" onclick="closeModal('modalAuth')">✕</button>
+    </div>
+
+    <div id="authLoggedOutView">
+      <div class="auth-helper">Login is optional. Sign in to sync your ZenFlow data across devices.</div>
+      <div class="auth-mode-switch">
+        <button class="auth-mode-btn active" id="authModeLoginBtn" onclick="setAuthMode('login')">Log In</button>
+        <button class="auth-mode-btn" id="authModeSignupBtn" onclick="setAuthMode('signup')">Sign Up</button>
+      </div>
+      <div class="form-group" id="authNicknameGroup" style="display:none">
+        <label class="form-label">Nickname</label>
+        <input class="input" id="authNicknameInput" type="text" maxlength="24" placeholder="How should we call you?" autocomplete="nickname">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="input" id="authEmailInput" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="input" id="authPasswordInput" type="password" placeholder="Minimum 6 characters" autocomplete="current-password">
+      </div>
+      <div class="auth-form-note" id="authModeNote">Use your account email and password to log in.</div>
+      <div class="auth-status" id="authStatusMessage">Use your email and password to continue.</div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+        <button class="btn btn-primary" id="authPrimaryBtn" onclick="handleAuthPrimary()">Log In</button>
+      </div>
+    </div>
+
+    <div id="authLoggedInView" style="display:none">
+      <div class="card card-sm" style="padding:14px">
+        <div class="text-xs">Signed in as</div>
+        <div class="fw-bold" id="authUserNickname" style="margin-top:4px;word-break:break-word"></div>
+        <div class="text-xs" id="authUserEmail" style="margin-top:4px;word-break:break-word"></div>
+      </div>
+      <div class="auth-status" id="authSyncInfo">Cloud sync is active for this account.</div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+        <button class="btn btn-ghost" onclick="syncCloudNow(true)">Sync Now</button>
+        <button class="btn btn-danger" onclick="handleAuthLogout()">Log Out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modalAddTask">
   <div class="modal">
     <div class="modal-header">
@@ -1350,6 +1488,20 @@ option{background:var(--surface)}
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
   import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut as firebaseSignOut,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+  import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCbN1iPFE0c3WRHlmHBZ-9WyToVYsd2YSk",
@@ -1362,6 +1514,42 @@ option{background:var(--surface)}
   };
 
   const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const firestoreDbId = "zenflow-db1";
+  const db = getFirestore(app, firestoreDbId);
+
+  window.ZenFlowFirebase = {
+    onAuth(callback){
+      return onAuthStateChanged(auth, (user) => {
+        callback(user ? {uid:user.uid, email:user.email||''} : null);
+      });
+    },
+    signUp(email, password){
+      return createUserWithEmailAndPassword(auth, email, password);
+    },
+    signIn(email, password){
+      return signInWithEmailAndPassword(auth, email, password);
+    },
+    signOut(){
+      return firebaseSignOut(auth);
+    },
+    async saveUserProfile(uid, profile){
+      await setDoc(doc(db, "zenflow_users", uid), {
+        profile,
+        updatedAt: serverTimestamp()
+      }, {merge:true});
+    },
+    async saveUserData(uid, payload){
+      await setDoc(doc(db, "zenflow_users", uid), {
+        ...payload,
+        updatedAt: serverTimestamp()
+      }, {merge:true});
+    },
+    async loadUserData(uid){
+      const snap = await getDoc(doc(db, "zenflow_users", uid));
+      return snap.exists() ? snap.data() : null;
+    }
+  };
 
   isSupported().then((supported) => {
     if (supported) {
@@ -1462,30 +1650,53 @@ let appState = {
   }
 };
 
-// Load saved state
-function loadState(){
-  const saved = STORE.get('state');
-  if(saved){
-    // Merge carefully
-    if(saved.pomo){Object.assign(appState.pomo, saved.pomo); appState.pomo.running=false; appState.pomo.timer=null;}
-    if(saved.todos) Object.assign(appState.todos, saved.todos);
-    if(saved.timer){Object.assign(appState.timer, saved.timer); appState.timer.running=false; appState.timer.timer=null;}
-    if(saved.tracking){Object.assign(appState.tracking, saved.tracking); appState.tracking.running=false; appState.tracking.timer=null;}
-    if(saved.settings) Object.assign(appState.settings, saved.settings);
-  }
-  // Apply settings
-  applyAccent(appState.settings.accent, appState.settings.accent2||'#a594ff');
-}
+const authState = {
+  bridge: null,
+  user: null,
+  loadedUid: null,
+  loadingCloud: false,
+  saveTimer: null,
+  saveInFlight: false,
+  lastSyncedAt: null,
+  lastSyncedSignature: '',
+  interactionSyncBound: false,
+  cloudErrorShownAt: 0,
+  mode: 'login',
+  initAttempts: 0
+};
 
-function saveState(){
-  const toSave = {
+function getPersistedState(){
+  return {
     pomo: {...appState.pomo, timer:null, running:false},
     todos: appState.todos,
     timer: {...appState.timer, timer:null, running:false},
     tracking: {...appState.tracking, timer:null, running:false},
     settings: appState.settings
   };
+}
+
+function applyPersistedState(saved){
+  if(!saved) return;
+  if(saved.pomo){Object.assign(appState.pomo, saved.pomo); appState.pomo.running=false; appState.pomo.timer=null;}
+  if(saved.todos) Object.assign(appState.todos, saved.todos);
+  if(saved.timer){Object.assign(appState.timer, saved.timer); appState.timer.running=false; appState.timer.timer=null;}
+  if(saved.tracking){Object.assign(appState.tracking, saved.tracking); appState.tracking.running=false; appState.tracking.timer=null;}
+  if(saved.settings) Object.assign(appState.settings, saved.settings);
+}
+
+// Load saved state
+function loadState(){
+  const saved = STORE.get('state');
+  applyPersistedState(saved);
+  // Apply settings
+  applyAccent(appState.settings.accent, appState.settings.accent2||'#a594ff');
+}
+
+function saveState(){
+  const toSave = getPersistedState();
   STORE.set('state', toSave);
+  renderHomeHero();
+  scheduleCloudSave();
 }
 
 // =====================================================================
@@ -1552,6 +1763,350 @@ function openModal(id){document.getElementById(id).classList.add('open')}
 document.querySelectorAll('.modal-overlay').forEach(m=>{
   m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')});
 });
+
+// =====================================================================
+// AUTH + CLOUD SYNC (OPTIONAL)
+// =====================================================================
+function authErrorMessage(err){
+  const code = err?.code || '';
+  if(code.includes('invalid-email')) return 'Please enter a valid email address.';
+  if(code.includes('email-already-in-use')) return 'This email is already in use.';
+  if(code.includes('weak-password')) return 'Password must be at least 6 characters.';
+  if(code.includes('invalid-credential')||code.includes('wrong-password')||code.includes('user-not-found')) return 'Invalid email or password.';
+  if(code.includes('network-request-failed')) return 'Network error. Please check your connection.';
+  return 'Authentication failed. Please try again.';
+}
+
+function cloudErrorMessage(err){
+  const code = err?.code || '';
+  if(code.includes('permission-denied')) return 'Cloud sync blocked: check Firestore security rules for this user.';
+  if(code.includes('unauthenticated')) return 'Cloud sync failed: session expired. Please log in again.';
+  if(code.includes('unavailable') || code.includes('network-request-failed')) return 'Cloud sync failed: network unavailable. Using local data for now.';
+  if(code.includes('failed-precondition')) return 'Cloud sync failed: enable Firestore database zenflow-db1 and publish rules for it.';
+  if(code.includes('not-found')) return 'Cloud document not found. A new cloud profile will be created.';
+  return 'Cloud sync failed. Using local data for now.';
+}
+
+function setAuthSyncInfo(msg, isError=false){
+  const info = document.getElementById('authSyncInfo');
+  if(!info) return;
+  info.textContent = msg;
+  info.style.color = isError ? 'var(--red)' : 'var(--text3)';
+}
+
+function toastCloudErrorOnce(msg){
+  const now = Date.now();
+  if(now - authState.cloudErrorShownAt > 5000){
+    toast(msg, 'error');
+    authState.cloudErrorShownAt = now;
+  }
+}
+
+function setAuthStatusMessage(msg, isError=false){
+  const el = document.getElementById('authStatusMessage');
+  if(!el) return;
+  el.textContent = msg;
+  el.style.color = isError ? 'var(--red)' : 'var(--text3)';
+}
+
+function normalizedNickname(v){
+  return (v||'').replace(/\s+/g,' ').trim();
+}
+
+function setAuthMode(mode){
+  if(mode!=='login' && mode!=='signup') return;
+  authState.mode = mode;
+  const isSignup = mode==='signup';
+  const loginBtn = document.getElementById('authModeLoginBtn');
+  const signupBtn = document.getElementById('authModeSignupBtn');
+  const nicknameGroup = document.getElementById('authNicknameGroup');
+  const note = document.getElementById('authModeNote');
+  const primary = document.getElementById('authPrimaryBtn');
+  const pass = document.getElementById('authPasswordInput');
+
+  if(loginBtn) loginBtn.classList.toggle('active', !isSignup);
+  if(signupBtn) signupBtn.classList.toggle('active', isSignup);
+  if(nicknameGroup) nicknameGroup.style.display = isSignup ? 'block' : 'none';
+  if(note) note.textContent = isSignup
+    ? 'Choose a nickname. This is what appears in the top-right corner.'
+    : 'Use your account email and password to log in.';
+  if(primary) primary.textContent = isSignup ? 'Create Account' : 'Log In';
+  if(pass) pass.setAttribute('autocomplete', isSignup ? 'new-password' : 'current-password');
+  if(isSignup){
+    setTimeout(()=>document.getElementById('authNicknameInput')?.focus(),50);
+  }
+}
+
+function getDisplayNickname(){
+  if(authState.user?.nickname) return authState.user.nickname;
+  return 'Zen User';
+}
+
+function updateAuthCorner(){
+  const btn = document.getElementById('authCornerBtn');
+  const txt = document.getElementById('authCornerText');
+  const avatar = document.getElementById('authCornerAvatar');
+  if(!btn||!txt||!avatar) return;
+  if(authState.user){
+    btn.classList.add('auth-on');
+    const nick = getDisplayNickname();
+    txt.textContent = nick;
+    avatar.textContent = nick.charAt(0).toUpperCase();
+    btn.title = 'Logged in. Click to manage account sync.';
+  } else {
+    btn.classList.remove('auth-on');
+    txt.textContent = authState.bridge ? 'Login' : 'Login...';
+    avatar.textContent = 'Z';
+    btn.title = authState.bridge ? 'Optional account login' : 'Connecting to Firebase...';
+  }
+  renderHomeHero();
+}
+
+function renderAuthModal(){
+  const outView = document.getElementById('authLoggedOutView');
+  const inView = document.getElementById('authLoggedInView');
+  if(!outView||!inView) return;
+
+  if(authState.user){
+    outView.style.display='none';
+    inView.style.display='block';
+    const nickEl = document.getElementById('authUserNickname');
+    const emailEl = document.getElementById('authUserEmail');
+    if(nickEl) nickEl.textContent = getDisplayNickname();
+    if(emailEl) emailEl.textContent = authState.user.email || '';
+    const info = document.getElementById('authSyncInfo');
+    if(info){
+      if(authState.loadingCloud) info.textContent='Syncing data from Firebase...';
+      else if(authState.lastSyncedAt) info.textContent='Last synced: '+new Date(authState.lastSyncedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      else info.textContent='Cloud sync is active for this account.';
+    }
+  } else {
+    outView.style.display='block';
+    inView.style.display='none';
+  }
+}
+
+function openAuthModal(){
+  renderAuthModal();
+  openModal('modalAuth');
+  if(!authState.user){
+    setAuthMode('login');
+    setAuthStatusMessage(authState.bridge?'Use your email and password to log in or create an account.':'Connecting to Firebase...');
+    setTimeout(()=>document.getElementById('authEmailInput')?.focus(),80);
+  }
+}
+
+function handleAuthPrimary(){
+  if(authState.mode==='signup') return handleAuthSignup();
+  return handleAuthLogin();
+}
+
+async function handleAuthSignup(){
+  if(!authState.bridge){toast('Firebase is still connecting. Please try again.','error');return;}
+  const nickname = normalizedNickname(document.getElementById('authNicknameInput')?.value||'');
+  const email = (document.getElementById('authEmailInput')?.value||'').trim();
+  const password = (document.getElementById('authPasswordInput')?.value||'').trim();
+  if(!nickname){setAuthStatusMessage('Nickname is required for sign up.',true);return;}
+  if(nickname.length<2||nickname.length>24){setAuthStatusMessage('Nickname should be 2 to 24 characters.',true);return;}
+  if(!email||!password){setAuthStatusMessage('Email and password are required.',true);return;}
+  if(password.length<6){setAuthStatusMessage('Password must be at least 6 characters.',true);return;}
+  setAuthStatusMessage('Creating your account...');
+  try{
+    const cred = await authState.bridge.signUp(email, password);
+    await authState.bridge.saveUserProfile(cred.user.uid, {nickname});
+    authState.user = {uid: cred.user.uid, email: cred.user.email||email, nickname};
+    updateAuthCorner();
+    setAuthStatusMessage('Account created. Sync enabled.');
+    closeModal('modalAuth');
+    toast('Signed up successfully','success');
+  } catch(err){
+    setAuthStatusMessage(authErrorMessage(err), true);
+  }
+}
+
+async function handleAuthLogin(){
+  if(!authState.bridge){toast('Firebase is still connecting. Please try again.','error');return;}
+  const email = (document.getElementById('authEmailInput')?.value||'').trim();
+  const password = (document.getElementById('authPasswordInput')?.value||'').trim();
+  if(!email||!password){setAuthStatusMessage('Email and password are required.',true);return;}
+  setAuthStatusMessage('Logging in...');
+  try{
+    await authState.bridge.signIn(email, password);
+    closeModal('modalAuth');
+    toast('Logged in successfully','success');
+  } catch(err){
+    setAuthStatusMessage(authErrorMessage(err), true);
+  }
+}
+
+async function handleAuthLogout(){
+  if(!authState.bridge) return;
+  try{
+    await syncCloudNow(false, true);
+    await authState.bridge.signOut();
+    authState.user = null;
+    authState.loadedUid = null;
+    authState.lastSyncedSignature = '';
+    updateAuthCorner();
+    renderAuthModal();
+    closeModal('modalAuth');
+    toast('Logged out. Local mode is still active.','info');
+  } catch(err){
+    toast('Could not log out. Please try again.','error');
+  }
+}
+
+function scheduleCloudSave(){
+  if(!authState.bridge||!authState.user||authState.loadingCloud) return;
+  if(authState.saveTimer) clearTimeout(authState.saveTimer);
+  authState.saveTimer = setTimeout(()=>{syncCloudNow(false);}, 350);
+}
+
+function getCloudSyncPayload(){
+  return {
+    state: getPersistedState(),
+    dailyStats: STORE.get('daily_stats', {}),
+    clientUpdatedAt: Date.now()
+  };
+}
+
+function getCloudSyncSignature(payload){
+  return JSON.stringify(payload.state)+'::'+JSON.stringify(payload.dailyStats);
+}
+
+function bindInteractionSync(){
+  if(authState.interactionSyncBound) return;
+  authState.interactionSyncBound = true;
+  const triggerSync = () => {
+    if(!authState.user||!authState.bridge||authState.loadingCloud) return;
+    scheduleCloudSave();
+  };
+  ['click','change','input','submit'].forEach((eventName)=>{
+    document.addEventListener(eventName, triggerSync, true);
+  });
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.hidden && authState.user){
+      syncCloudNow(false, true);
+    }
+  });
+}
+
+async function syncCloudNow(showToast=false, force=false){
+  if(!authState.bridge||!authState.user||authState.loadingCloud) return false;
+  if(authState.saveInFlight) return false;
+  if(authState.saveTimer){clearTimeout(authState.saveTimer);authState.saveTimer=null;}
+
+  const payload = getCloudSyncPayload();
+  const signature = getCloudSyncSignature(payload);
+  if(!force && signature===authState.lastSyncedSignature){
+    return true;
+  }
+
+  authState.saveInFlight = true;
+  try{
+    await authState.bridge.saveUserData(authState.user.uid, payload);
+    authState.lastSyncedSignature = signature;
+    authState.lastSyncedAt = Date.now();
+    setAuthSyncInfo('Cloud sync active. Last synced at '+new Date(authState.lastSyncedAt).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'}));
+    updateAuthCorner();
+    renderAuthModal();
+    if(showToast) toast('Data synced to Firebase','success');
+    return true;
+  } catch(err){
+    const msg = cloudErrorMessage(err);
+    setAuthSyncInfo(msg, true);
+    if(showToast) toast(msg,'error');
+    console.error('ZenFlow cloud sync error:', err);
+    return false;
+  } finally {
+    authState.saveInFlight = false;
+  }
+}
+
+async function loadCloudStateForUser(uid){
+  if(!authState.bridge||!uid) return;
+  authState.loadingCloud = true;
+  setAuthSyncInfo('Loading cloud data...');
+  renderAuthModal();
+  try{
+    const remote = await authState.bridge.loadUserData(uid);
+    const remoteNickname = normalizedNickname(remote?.profile?.nickname||'');
+    if(remoteNickname && authState.user){
+      authState.user = {...authState.user, nickname: remoteNickname};
+    }
+    if(remote?.state){
+      STORE.set('state', remote.state);
+      applyPersistedState(remote.state);
+      if(remote.dailyStats) STORE.set('daily_stats', remote.dailyStats);
+      refreshUiFromState();
+      authState.lastSyncedSignature = getCloudSyncSignature({
+        state: getPersistedState(),
+        dailyStats: STORE.get('daily_stats', {}),
+        clientUpdatedAt: Date.now()
+      });
+      setAuthSyncInfo('Cloud sync active. Data loaded successfully.');
+      toast('Cloud data loaded','success');
+    } else {
+      const seeded = await syncCloudNow(false, true);
+      if(seeded){
+        setAuthSyncInfo('Cloud sync active. New cloud profile created.');
+        toast('Cloud sync enabled for this account','success');
+      }
+    }
+    authState.lastSyncedAt = Date.now();
+  } catch(err){
+    const msg = cloudErrorMessage(err);
+    setAuthStatusMessage(msg, true);
+    setAuthSyncInfo(msg, true);
+    toastCloudErrorOnce(msg);
+    console.error('ZenFlow cloud load error:', err);
+  } finally {
+    authState.loadingCloud = false;
+    renderAuthModal();
+    updateAuthCorner();
+  }
+}
+
+function initAuthIntegration(){
+  if(authState.bridge) return;
+  if(window.ZenFlowFirebase){
+    authState.bridge = window.ZenFlowFirebase;
+    bindInteractionSync();
+    updateAuthCorner();
+    authState.bridge.onAuth(async (user)=>{
+      const prevUid = authState.user?.uid || null;
+      const prevNickname = authState.user?.nickname || '';
+      authState.user = user;
+      if(authState.user && prevNickname && authState.user.uid===prevUid){
+        authState.user.nickname = prevNickname;
+      }
+      if(authState.user && !authState.user.nickname){
+        authState.user.nickname = 'Zen User';
+      }
+      updateAuthCorner();
+      renderAuthModal();
+      if(user && user.uid!==authState.loadedUid){
+        await loadCloudStateForUser(user.uid);
+        authState.loadedUid = user.uid;
+      }
+      if(!user){
+        authState.loadedUid = null;
+        authState.lastSyncedAt = null;
+        authState.lastSyncedSignature = '';
+      }
+      if(user && prevUid && prevUid!==user.uid){
+        toast('Switched account to '+(user.email||'user'),'info');
+      }
+    });
+    return;
+  }
+  authState.initAttempts++;
+  if(authState.initAttempts<60){
+    setTimeout(initAuthIntegration, 250);
+  } else {
+    updateAuthCorner();
+  }
+}
 
 // =====================================================================
 // POMODORO
@@ -1743,11 +2298,30 @@ function renderPomoLog(){
 
 function clearPomoLog(){appState.pomo.log=[];renderPomoLog();saveState();}
 
-function saveSettings(){
-  appState.pomo.autoBreak = document.getElementById('autoBreak').checked;
-  appState.pomo.autoWork = document.getElementById('autoWork').checked;
-  appState.pomo.sound = document.getElementById('soundToggle').checked;
+let soundPreviewTimer = null;
+
+function saveSettings(source=''){
+  const autoBreakEl = document.getElementById('autoBreak');
+  const autoWorkEl = document.getElementById('autoWork');
+  const soundToggleEl = document.getElementById('soundToggle');
+  const soundSelectEl = document.getElementById('soundSelect');
+  const volumeSliderEl = document.getElementById('volumeSlider');
+
+  if(autoBreakEl) appState.pomo.autoBreak = autoBreakEl.checked;
+  if(autoWorkEl) appState.pomo.autoWork = autoWorkEl.checked;
+  if(soundToggleEl) appState.pomo.sound = soundToggleEl.checked;
+  if(soundSelectEl) appState.settings.sound = soundSelectEl.value;
+  if(volumeSliderEl) appState.settings.volume = Math.max(0, Math.min(100, parseInt(volumeSliderEl.value, 10) || 70));
+
   saveState();
+
+  // Preview the selected notification sound immediately from Settings.
+  if(source==='soundSelect'){
+    playSound(true);
+  } else if(source==='volumeSlider'){
+    if(soundPreviewTimer) clearTimeout(soundPreviewTimer);
+    soundPreviewTimer = setTimeout(()=>playSound(true), 120);
+  }
 }
 
 // =====================================================================
@@ -2423,6 +2997,7 @@ function addDailyFocusMins(mins){
   stats[today].mins=(stats[today].mins||0)+mins;
   stats[today].sessions=(stats[today].sessions||0)+1;
   STORE.set('daily_stats',stats);
+  scheduleCloudSave();
 }
 
 function renderForest(){
@@ -2792,19 +3367,56 @@ function confirmReset(){
 // =====================================================================
 // SOUND & NOTIFICATIONS
 // =====================================================================
-function playSound(){
-  if(!appState.pomo.sound) return;
+function playSound(preview=false){
+  if(!preview && !appState.pomo.sound) return;
+  const soundType = appState.settings.sound || 'bell';
+  if(soundType==='none') return;
+
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    const notes=[523,659,784,1047];
-    notes.forEach((freq,i)=>{
+    const volume = Math.max(0, Math.min(1, (appState.settings.volume ?? 70) / 100));
+    const presets = {
+      bell: {
+        type: 'sine',
+        notes: [880,1175,1568],
+        spacing: 0.12,
+        hold: 0.42,
+        gain: 0.26
+      },
+      chime: {
+        type: 'triangle',
+        notes: [523,659,784,988],
+        spacing: 0.11,
+        hold: 0.36,
+        gain: 0.24
+      },
+      ding: {
+        type: 'sine',
+        notes: [1047],
+        spacing: 0.08,
+        hold: 0.55,
+        gain: 0.3
+      },
+      beep: {
+        type: 'square',
+        notes: [740,740],
+        spacing: 0.16,
+        hold: 0.2,
+        gain: 0.18
+      }
+    };
+    const cfg = presets[soundType] || presets.bell;
+
+    cfg.notes.forEach((freq,i)=>{
       const osc=ctx.createOscillator(); const gain=ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.frequency.value=freq; osc.type='sine';
-      gain.gain.setValueAtTime(0,ctx.currentTime+i*0.15);
-      gain.gain.linearRampToValueAtTime(0.3,ctx.currentTime+i*0.15+0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+i*0.15+0.4);
-      osc.start(ctx.currentTime+i*0.15); osc.stop(ctx.currentTime+i*0.15+0.4);
+      osc.frequency.value=freq; osc.type=cfg.type;
+      const start = ctx.currentTime + i*cfg.spacing;
+      const peakGain = Math.max(0.001, cfg.gain * volume);
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(peakGain, start+0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, start+cfg.hold);
+      osc.start(start); osc.stop(start+cfg.hold);
     });
   } catch(e){}
 }
@@ -2835,6 +3447,76 @@ function formatDuration(s){
 function pad(n,l=2){return String(n).padStart(l,'0')}
 function escHtml(s){return s?.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')||''}
 
+function getCurrentStreakDays(){
+  const stats = STORE.get('daily_stats', {});
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  let streak = 0;
+  for(let i=0;;i++){
+    const d = new Date(today);
+    d.setDate(today.getDate()-i);
+    const key = d.toISOString().split('T')[0];
+    if(stats[key] && (stats[key].mins||0)>0) streak++;
+    else if(i>0) break;
+    else if(i===0) break;
+  }
+  return streak;
+}
+
+function renderHomeHero(){
+  const todayKey = new Date().toISOString().split('T')[0];
+  const stats = STORE.get('daily_stats', {});
+  const todayMins = (stats[todayKey]||{}).mins||0;
+  const streak = getCurrentStreakDays();
+  const sessions = appState.pomo.totalSessions||0;
+  const titleEl = document.getElementById('heroWelcomeTitle');
+  const minsEl = document.getElementById('heroTodayFocus');
+  const sessionsEl = document.getElementById('heroTotalSessions');
+  const streakEl = document.getElementById('heroStreakDays');
+  if(titleEl){
+    titleEl.textContent = authState.user
+      ? `Welcome back, ${getDisplayNickname()}. Let's build momentum.`
+      : 'Own your day with calm, intentional focus.';
+  }
+  if(minsEl) minsEl.textContent = `${todayMins}m`;
+  if(sessionsEl) sessionsEl.textContent = `${sessions}`;
+  if(streakEl) streakEl.textContent = `${streak}d`;
+}
+
+function refreshUiFromState(){
+  const s=appState.settings;
+  applyAccent(s.accent, s.accent2||'#a594ff');
+  const soundSelectEl = document.getElementById('soundSelect');
+  const volumeSliderEl = document.getElementById('volumeSlider');
+  if(soundSelectEl){
+    const allowed = new Set(['bell','chime','ding','beep','none']);
+    soundSelectEl.value = allowed.has(s.sound) ? s.sound : 'bell';
+  }
+  if(volumeSliderEl) volumeSliderEl.value = String(Math.max(0, Math.min(100, s.volume ?? 70)));
+  document.querySelectorAll('.color-opt').forEach(o=>{if(o.dataset.c===s.accent)o.classList.add('selected');else o.classList.remove('selected');});
+  document.getElementById('workVal').textContent=appState.pomo.workMins;
+  document.getElementById('shortVal').textContent=appState.pomo.shortMins;
+  document.getElementById('longVal').textContent=appState.pomo.longMins;
+  document.getElementById('sessionsVal').textContent=appState.pomo.sessionsBeforeLong;
+  if(document.getElementById('autoBreak')) document.getElementById('autoBreak').checked=appState.pomo.autoBreak;
+  if(document.getElementById('autoWork')) document.getElementById('autoWork').checked=appState.pomo.autoWork;
+  if(document.getElementById('soundToggle')) document.getElementById('soundToggle').checked=appState.pomo.sound!==false;
+  updatePomoDisplay();
+  renderPomoLog();
+  renderTodos();
+  renderTodoLists();
+  renderTimerPresets();
+  populateProjectDropdowns();
+  const t=appState.timer;
+  document.getElementById('timerH').value=Math.floor(t.total/3600);
+  document.getElementById('timerM').value=Math.floor((t.total%3600)/60);
+  document.getElementById('timerS').value=t.total%60;
+  document.getElementById('timerDisplay').textContent=formatHMS(t.total);
+  if(appState.settings.ambient) updateAmbientBadge(true, appState.settings.ambient);
+  else updateAmbientBadge(false);
+  renderHomeHero();
+}
+
 // =====================================================================
 // INIT
 // =====================================================================
@@ -2850,29 +3532,8 @@ function init(){
   }
 
   loadState();
-  // Apply saved settings
-  const s=appState.settings;
-  document.querySelectorAll('.color-opt').forEach(o=>{if(o.dataset.c===s.accent)o.classList.add('selected');else o.classList.remove('selected');});
-  // Sync pomo settings UI
-  document.getElementById('workVal').textContent=appState.pomo.workMins;
-  document.getElementById('shortVal').textContent=appState.pomo.shortMins;
-  document.getElementById('longVal').textContent=appState.pomo.longMins;
-  document.getElementById('sessionsVal').textContent=appState.pomo.sessionsBeforeLong;
-  if(document.getElementById('autoBreak')) document.getElementById('autoBreak').checked=appState.pomo.autoBreak;
-  if(document.getElementById('autoWork')) document.getElementById('autoWork').checked=appState.pomo.autoWork;
-  if(document.getElementById('soundToggle')) document.getElementById('soundToggle').checked=appState.pomo.sound!==false;
-  updatePomoDisplay();
-  renderPomoLog();
-  renderTodos();
-  renderTodoLists();
-  renderTimerPresets();
-  populateProjectDropdowns();
-  // Timer display
-  const t=appState.timer;
-  document.getElementById('timerH').value=Math.floor(t.total/3600);
-  document.getElementById('timerM').value=Math.floor((t.total%3600)/60);
-  document.getElementById('timerS').value=t.total%60;
-  document.getElementById('timerDisplay').textContent=formatHMS(t.total);
+  refreshUiFromState();
+  initAuthIntegration();
   // Keyboard shortcuts
   document.addEventListener('keydown', e=>{
     if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
