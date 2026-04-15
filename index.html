@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ZENFLOW — Focus & Productivity Suite</title>
+<meta name="theme-color" content="#0a0a0f">
+<meta name="application-name" content="ZenFlow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ZenFlow">
+<link rel="icon" type="image/png" sizes="512x512" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
 <style>
@@ -561,14 +568,27 @@ option{background:var(--surface)}
   .nav-label{opacity:1;font-size:10px;line-height:1;max-width:66px;text-overflow:ellipsis}
   .main,.sidebar.expanded~.main{margin-left:0;padding-bottom:var(--mobile-nav-height)}
   .page{padding:18px}
-  .topbar{padding:12px 16px;flex-wrap:wrap;gap:10px;align-items:flex-start}
-  .topbar-left,.topbar-right{width:100%}
-  .topbar-right{justify-content:flex-end}
-  .auth-corner-btn{max-width:100%}
-  .brand-word{font-size:14px}
+  .topbar{padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap}
+  .topbar-left{min-width:0;display:flex;align-items:center;gap:8px;flex:1}
+  .topbar-right{min-width:0;display:flex;align-items:center;gap:6px;justify-content:flex-end;flex-shrink:0}
+  .topbar-date{display:none}
+  .ambient-badge{display:none}
+  .topbar-right .btn-icon{display:none}
+  .topbar-time{font-size:12px}
+  .brand-pill{padding:5px 9px;gap:7px}
+  .brand-word{font-size:13px}
+  .auth-corner-btn{max-width:152px;margin-left:0;padding:6px 9px}
+  .auth-corner-text{max-width:74px;font-size:11px}
 }
 @media(max-width:600px){
   .page{padding:14px}
+  .topbar{padding:9px 10px}
+  .topbar-time{display:none}
+  .brand-word{display:none}
+  .brand-pill{padding:5px 8px}
+  .brand-mark{width:18px;height:18px;font-size:10px}
+  .auth-corner-btn{padding:6px 8px;max-width:136px}
+  .auth-corner-text{max-width:66px}
   .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
   .form-row{grid-template-columns:1fr}
   .tracker-bar{flex-wrap:wrap}
@@ -587,9 +607,12 @@ option{background:var(--surface)}
 @media(max-width:420px){
   .nav-item{min-width:50px;padding:0 8px}
   .nav-label{display:none}
-  .ambient-badge{font-size:11px;padding:4px 8px}
-  .auth-corner-text{max-width:110px}
-  .brand-pill{padding:6px 10px}
+  .topbar{padding:9px 10px}
+  .topbar-right{gap:5px}
+  .auth-corner-btn{max-width:112px;padding:5px 7px;gap:6px}
+  .auth-corner-avatar{width:18px;height:18px;font-size:10px}
+  .auth-corner-text{max-width:48px}
+  .brand-pill{padding:5px 7px}
   .home-title{font-size:23px}
 }
 
