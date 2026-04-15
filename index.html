@@ -2421,6 +2421,7 @@ function saveSettings(source=''){
   if(source==='soundSelect'){
     playSound(true);
   } else if(source==='volumeSlider'){
+    updateAmbientVolume();
     if(soundPreviewTimer) clearTimeout(soundPreviewTimer);
     soundPreviewTimer = setTimeout(()=>playSound(true), 120);
   }
@@ -3426,8 +3427,94 @@ const AMBIENT_SOUNDS = [
   {id:'white',name:'White Noise',label:'🔊 White Noise',desc:'Pure white noise'}
 ];
 
+const AMBIENT_FILES = {
+  rain: 'assets/ambient/rain.mp3',
+  forest: 'assets/ambient/forest.mp3',
+  cafe: 'assets/ambient/cafe.mp3',
+  ocean: 'assets/ambient/ocean.mp3',
+  fire: 'assets/ambient/fireplace.mp3',
+  white: 'assets/ambient/white_noise.mp3'
+};
+
+const ambientPlayer = {
+  audio: null,
+  activeId: null,
+  unlockBound: false
+};
+
 function getAmbientName(id){
   return AMBIENT_SOUNDS.find(s=>s.id===id)?.name || 'Ambient';
+}
+
+function ensureAmbientAudio(){
+  if(!ambientPlayer.audio){
+    const audio = new Audio();
+    audio.loop = true;
+    audio.preload = 'auto';
+    ambientPlayer.audio = audio;
+  }
+  return ambientPlayer.audio;
+}
+
+function getAmbientVolume(){
+  return Math.max(0, Math.min(1, (appState.settings.volume ?? 70) / 100));
+}
+
+function updateAmbientVolume(){
+  if(ambientPlayer.audio){
+    ambientPlayer.audio.volume = getAmbientVolume();
+  }
+}
+
+async function playAmbient(id, showErrorToast=false){
+  const src = AMBIENT_FILES[id];
+  if(!src) return false;
+  const audio = ensureAmbientAudio();
+  updateAmbientVolume();
+  if(ambientPlayer.activeId!==id || !audio.src.endsWith(src)){
+    audio.src = src;
+    ambientPlayer.activeId = id;
+  }
+  try{
+    await audio.play();
+    appState.settings.ambientPlaying = true;
+    updateAmbientBadge(true, getAmbientName(id));
+    return true;
+  } catch(err){
+    appState.settings.ambientPlaying = false;
+    updateAmbientBadge(false);
+    if(showErrorToast){
+      toast('Browser blocked autoplay. Tap Play again to allow ambient audio.','info','🎵');
+    }
+    return false;
+  }
+}
+
+function stopAmbientPlayback(clearSelection=true){
+  if(ambientPlayer.audio){
+    ambientPlayer.audio.pause();
+  }
+  appState.settings.ambientPlaying = false;
+  if(clearSelection){
+    appState.settings.ambient = null;
+    ambientPlayer.activeId = null;
+  }
+  updateAmbientBadge(false);
+}
+
+function queueAmbientResumeOnInteraction(){
+  if(ambientPlayer.unlockBound || !appState.settings.ambient || !appState.settings.ambientPlaying) return;
+  ambientPlayer.unlockBound = true;
+  const resume = () => {
+    ['pointerdown','keydown','touchstart'].forEach((eventName)=>{
+      document.removeEventListener(eventName, resume, true);
+    });
+    ambientPlayer.unlockBound = false;
+    playAmbient(appState.settings.ambient, false);
+  };
+  ['pointerdown','keydown','touchstart'].forEach((eventName)=>{
+    document.addEventListener(eventName, resume, true);
+  });
 }
 
 function renderSettings(){
@@ -3435,31 +3522,29 @@ function renderSettings(){
   el.innerHTML=AMBIENT_SOUNDS.map(s=>`
     <div class="settings-row">
       <div><div class="settings-row-label">${s.label}</div><div class="settings-row-sub">${s.desc}</div></div>
-      <button class="btn ${appState.settings.ambient===s.id?'btn-primary':'btn-ghost'}" onclick="setAmbient('${s.id}')">
-        ${appState.settings.ambient===s.id?'Playing':'Play'}
+      <button class="btn ${appState.settings.ambient===s.id && appState.settings.ambientPlaying?'btn-primary':'btn-ghost'}" onclick="setAmbient('${s.id}')">
+        ${appState.settings.ambient===s.id && appState.settings.ambientPlaying?'Playing':'Play'}
       </button>
     </div>`).join('');
 }
 
-function setAmbient(id, forcePlay=false){
+async function setAmbient(id, forcePlay=false){
   if(!id){
-    appState.settings.ambient=null;
-    updateAmbientBadge(false);
+    stopAmbientPlayback(true);
     closeCtxMenu();
     renderSettings();
     saveState();
     return;
   }
 
-  const shouldPlay = forcePlay ? true : appState.settings.ambient!==id;
+  const shouldPlay = forcePlay ? true : appState.settings.ambient!==id || !appState.settings.ambientPlaying;
   if(shouldPlay){
     appState.settings.ambient=id;
     const ambientName = getAmbientName(id);
-    updateAmbientBadge(true, ambientName);
-    toast(`Now playing: ${ambientName}`,'info','🎵');
+    const started = await playAmbient(id, true);
+    if(started) toast(`Now playing: ${ambientName}`,'info','🎵');
   } else {
-    appState.settings.ambient=null;
-    updateAmbientBadge(false);
+    stopAmbientPlayback(true);
   }
 
   closeCtxMenu();
@@ -3723,8 +3808,13 @@ function refreshUiFromState(){
   document.getElementById('timerM').value=Math.floor((t.total%3600)/60);
   document.getElementById('timerS').value=t.total%60;
   document.getElementById('timerDisplay').textContent=formatHMS(t.total);
-  if(appState.settings.ambient) updateAmbientBadge(true, getAmbientName(appState.settings.ambient));
-  else updateAmbientBadge(false);
+  updateAmbientVolume();
+  if(appState.settings.ambient && appState.settings.ambientPlaying){
+    updateAmbientBadge(true, getAmbientName(appState.settings.ambient));
+    queueAmbientResumeOnInteraction();
+  } else {
+    updateAmbientBadge(false);
+  }
   renderHomeHero();
 }
 
@@ -3747,9 +3837,19 @@ function init(){
   initAuthIntegration();
 
   document.addEventListener('visibilitychange', ()=>{
-    if(!document.hidden) syncRunningClocks();
+    if(!document.hidden){
+      syncRunningClocks();
+      if(appState.settings.ambient && appState.settings.ambientPlaying){
+        playAmbient(appState.settings.ambient, false);
+      }
+    }
   });
-  window.addEventListener('focus', syncRunningClocks);
+  window.addEventListener('focus', ()=>{
+    syncRunningClocks();
+    if(appState.settings.ambient && appState.settings.ambientPlaying){
+      playAmbient(appState.settings.ambient, false);
+    }
+  });
 
   document.addEventListener('click', e=>{
     const menu=document.getElementById('ctxMenu');
