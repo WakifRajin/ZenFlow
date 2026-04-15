@@ -177,7 +177,8 @@ option{background:var(--surface)}
 
 /* CONTROLS */
 .pomo-controls{display:flex;align-items:center;gap:12px}
-.pomo-btn-main{width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;font-size:24px;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
+.pomo-btn-main{width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;font-size:22px;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
+.pomo-btn-main svg{width:22px;height:22px;display:block}
 .pomo-btn-main.play{background:var(--accent);color:white;box-shadow:0 0 30px var(--accent-glow)}
 .pomo-btn-main.play:hover{background:var(--accent2);transform:scale(1.05)}
 .pomo-btn-main.pause{background:var(--surface2);color:var(--text)}
@@ -934,7 +935,7 @@ option{background:var(--surface)}
           </div>
           <div class="timer-controls mt-16">
             <button class="btn btn-primary btn-lg" id="timerStartBtn" onclick="toggleTimer()">
-              <svg id="timerPlayIcon" viewBox="0 0 24 24" fill="white" style="width:18px;height:18px"><polygon points="5,3 19,12 5,21"/></svg>
+              <svg id="timerPlayIcon" viewBox="0 0 24 24" fill="white" style="width:16px;height:16px"><polygon points="5,3 19,12 5,21"/></svg>
               Start
             </button>
             <button class="btn btn-ghost btn-lg" onclick="resetTimer()">Reset</button>
@@ -966,7 +967,7 @@ option{background:var(--surface)}
           <div class="sw-time" id="swDisplay"><span id="swMain">00:00:00</span><span class="sw-ms" id="swMs">.000</span></div>
           <div class="sw-controls">
             <button class="btn btn-primary btn-xl" id="swStartBtn" onclick="toggleStopwatch()">
-              <svg id="swIcon" viewBox="0 0 24 24" fill="white" style="width:20px;height:20px"><polygon points="5,3 19,12 5,21"/></svg>
+              <svg id="swIcon" viewBox="0 0 24 24" fill="white" style="width:18px;height:18px"><polygon points="5,3 19,12 5,21"/></svg>
               Start
             </button>
             <button class="btn btn-ghost btn-xl" id="swLapBtn" onclick="addLap()" disabled>
@@ -2169,8 +2170,8 @@ function updatePomoDots(){
 function togglePomodoro(){
   const p = appState.pomo;
   p.running = !p.running;
-  const icon = p.running ? `<svg viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`
-                         : `<svg viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>`;
+  const icon = p.running ? `<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>`
+                         : `<polygon points="5,3 19,12 5,21"></polygon>`;
   document.getElementById('pomoPlayIcon').innerHTML = icon;
   document.getElementById('focusPlayIcon').innerHTML = icon;
   const btn = document.getElementById('pomoBtnMain');
@@ -2200,8 +2201,8 @@ function pomoComplete(){
   const p = appState.pomo;
   const btn = document.getElementById('pomoBtnMain');
   btn.className = 'pomo-btn-main play';
-  document.getElementById('pomoPlayIcon').innerHTML = `<svg viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>`;
-  document.getElementById('focusPlayIcon').innerHTML = `<svg viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>`;
+  document.getElementById('pomoPlayIcon').innerHTML = `<polygon points="5,3 19,12 5,21"></polygon>`;
+  document.getElementById('focusPlayIcon').innerHTML = `<polygon points="5,3 19,12 5,21"></polygon>`;
   playSound();
   showNotification(p.mode==='work'?'Focus session complete! Time for a break 🎉':'Break time is over. Let\'s focus! 🎯');
   if(p.mode==='work'){
@@ -2260,8 +2261,8 @@ function resetPomodoro(){
   if(p.running){clearInterval(p.timer); p.running=false;}
   p.remaining = getPomoTotal(p.mode);
   document.getElementById('pomoBtnMain').className='pomo-btn-main play';
-  document.getElementById('pomoPlayIcon').innerHTML=`<svg viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>`;
-  document.getElementById('focusPlayIcon').innerHTML=`<svg viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>`;
+  document.getElementById('pomoPlayIcon').innerHTML=`<polygon points="5,3 19,12 5,21"></polygon>`;
+  document.getElementById('focusPlayIcon').innerHTML=`<polygon points="5,3 19,12 5,21"></polygon>`;
   updatePomoDisplay();
   saveState();
 }
@@ -2611,13 +2612,13 @@ function toggleTimer(){
     t.recent.unshift({label:formatHMS(t.total),total:t.total});
     if(t.recent.length>5) t.recent.pop();
     renderRecentTimers();
-    document.getElementById('timerStartBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:18px;height:18px"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`;
+    document.getElementById('timerStartBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:16px;height:16px"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`;
     document.getElementById('timerDisplay').className='timer-time-big running';
     document.getElementById('timerLabel').textContent='COUNTING DOWN';
     t.timer=setInterval(tickTimer,1000);
   } else {
     clearInterval(t.timer);
-    document.getElementById('timerStartBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:18px;height:18px"><polygon points="5,3 19,12 5,21"/></svg> Resume`;
+    document.getElementById('timerStartBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:16px;height:16px"><polygon points="5,3 19,12 5,21"/></svg> Resume`;
   }
   saveState();
 }
@@ -2632,7 +2633,7 @@ function tickTimer(){
     document.getElementById('timerDisplay').textContent='00:00:00';
     document.getElementById('timerDisplay').className='timer-time-big done';
     document.getElementById('timerLabel').textContent='TIME\'S UP!';
-    document.getElementById('timerStartBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:18px;height:18px"><polygon points="5,3 19,12 5,21"/></svg> Start`;
+    document.getElementById('timerStartBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:16px;height:16px"><polygon points="5,3 19,12 5,21"/></svg> Start`;
     playSound();showNotification('⏰ Timer complete!');
     saveState();
   }
@@ -2648,7 +2649,7 @@ function resetTimer(){
   document.getElementById('timerDisplay').textContent=formatHMS(t.total);
   document.getElementById('timerDisplay').className='timer-time-big';
   document.getElementById('timerLabel').textContent='SET YOUR TIMER';
-  document.getElementById('timerStartBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:18px;height:18px"><polygon points="5,3 19,12 5,21"/></svg> Start`;
+  document.getElementById('timerStartBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:16px;height:16px"><polygon points="5,3 19,12 5,21"/></svg> Start`;
   document.getElementById('timerLaps').innerHTML='';
 }
 
@@ -2733,13 +2734,13 @@ function toggleStopwatch(){
   if(sw.running){
     sw.startTime=Date.now()-sw.elapsed;
     sw.timer=setInterval(tickSw,13);
-    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:20px;height:20px"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`;
+    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:18px;height:18px"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Pause`;
     btn.className='btn btn-danger btn-xl';
     document.getElementById('swMain').parentElement.className='sw-time running';
     lapBtn.disabled=false;resetBtn.disabled=false;
   } else {
     clearInterval(sw.timer);
-    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:20px;height:20px"><polygon points="5,3 19,12 5,21"/></svg> Resume`;
+    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:18px;height:18px"><polygon points="5,3 19,12 5,21"/></svg> Resume`;
     btn.className='btn btn-success btn-xl';
     document.getElementById('swMain').parentElement.className='sw-time';
   }
@@ -2790,7 +2791,7 @@ function resetStopwatch(){
   document.getElementById('swMs').textContent='.000';
   document.getElementById('swMain').parentElement.className='sw-time';
   const btn=document.getElementById('swStartBtn');
-  btn.innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:20px;height:20px"><polygon points="5,3 19,12 5,21"/></svg> Start`;
+  btn.innerHTML=`<svg viewBox="0 0 24 24" fill="white" style="width:18px;height:18px"><polygon points="5,3 19,12 5,21"/></svg> Start`;
   btn.className='btn btn-primary btn-xl';
   document.getElementById('swLapBtn').disabled=true;
   document.getElementById('swResetBtn').disabled=true;
