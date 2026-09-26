@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// ZenFlow security rules for database "zenflow-db1".
+// Deploy: firebase deploy --only firestore:rules
+//
+// Each signed-in user may read, write and delete only their own document
+// zenflow_users/{uid}. Everything else is denied. The client sanitizes all
+// data it reads, but these rules are the actual security boundary.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function validProfile(d) {
+      return !('profile' in d) || d.profile == null || (
+        d.profile is map &&
+        d.profile.keys().hasOnly(['nickname']) &&
+        (!('nickname' in d.profile) ||
+          (d.profile.nickname is string && d.profile.nickname.size() <= 24))
+      );
+    }
+
+    function validDoc(d) {
+      // v2 fields; the v1 fields (state, dailyStats, clientUpdatedAt) remain
+      // writable so clients still running a cached v1 page keep working until
+      // they reload. Remove them from this list once v1 is gone.
+      return d.keys().hasOnly(['profile', 'data', 'schemaVersion', 'updatedAt',
+                               'state', 'dailyStats', 'clientUpdatedAt']) &&
+        (!('schemaVersion' in d) || d.schemaVersion == 2) &&
+        (!('data' in d) || d.data is map) &&
+        validProfile(d);
+    }
+
+    match /zenflow_users/{uid} {
+      allow read, delete: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validDoc(request.resource.data);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "zenflow-db1",
+      "rules": "firestore.rules"
+    }
+  ]
+}
