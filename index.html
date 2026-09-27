@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.google-analytics.com https://www.googletagmanager.com; media-src 'self'; connect-src 'self' https://*.googleapis.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://zenflow-pro.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googletagmanager.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://www.google-analytics.com https://www.googletagmanager.com; media-src 'self'; connect-src 'self' https://*.cloudfunctions.net https://*.run.app https://*.googleapis.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://zenflow-pro.firebaseapp.com; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<title>ZENFLOW — Focus & Productivity Suite</title>
+<title>ZenFlow — Focus & Productivity</title>
 <meta name="theme-color" content="#0a0a0f">
 <meta name="application-name" content="ZenFlow">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,1256 +16,550 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
-<style>
-:root {
-  --app-vh: 100vh;
-  --sidebar-collapsed: 72px;
-  --sidebar-expanded: 220px;
-  --mobile-nav-height: 76px;
-  --bg: #0a0a0f;
-  --bg2: #111118;
-  --bg3: #18181f;
-  --bg4: #1e1e28;
-  --surface: #22222e;
-  --surface2: #2a2a38;
-  --border: rgba(255,255,255,0.07);
-  --border2: rgba(255,255,255,0.12);
-  --text: #e8e8f0;
-  --text2: #9090a8;
-  --text3: #5a5a70;
-  --accent: #7c6af7;
-  --accent2: #a594ff;
-  --accent-glow: rgba(124,106,247,0.25);
-  --green: #4ade80;
-  --green-dim: rgba(74,222,128,0.15);
-  --red: #f87171;
-  --red-dim: rgba(248,113,113,0.15);
-  --orange: #fb923c;
-  --orange-dim: rgba(251,146,60,0.15);
-  --cyan: #22d3ee;
-  --cyan-dim: rgba(34,211,238,0.12);
-  --yellow: #fbbf24;
-  --yellow-dim: rgba(251,191,36,0.12);
-  --shadow: 0 8px 32px rgba(0,0,0,0.4);
-  --shadow-lg: 0 20px 60px rgba(0,0,0,0.5);
-  --radius: 14px;
-  --radius-sm: 8px;
-  --radius-lg: 20px;
-  --font-display: 'Syne', sans-serif;
-  --font-mono: 'DM Mono', monospace;
-  --font-body: 'DM Sans', sans-serif;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{font-size:16px;-webkit-font-smoothing:antialiased}
-body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:var(--app-vh);overflow-x:hidden}
-
-body.theme-light{
-  --bg:#f3f6ff;
-  --bg2:#ffffff;
-  --bg3:#eef2fb;
-  --bg4:#e4e9f6;
-  --surface:#dde5f5;
-  --surface2:#d0daef;
-  --border:rgba(30,45,85,0.1);
-  --border2:rgba(30,45,85,0.18);
-  --text:#1c2544;
-  --text2:#40507c;
-  --text3:#6b789b;
-  --accent-glow:rgba(124,106,247,0.2);
-  --green-dim:rgba(74,222,128,0.2);
-  --red-dim:rgba(248,113,113,0.2);
-  --orange-dim:rgba(251,146,60,0.2);
-  --cyan-dim:rgba(34,211,238,0.2);
-  --yellow-dim:rgba(251,191,36,0.2);
-  --shadow:0 8px 24px rgba(23,38,77,0.12);
-  --shadow-lg:0 18px 48px rgba(23,38,77,0.16);
-}
-
-/* SCROLLBAR */
-::-webkit-scrollbar{width:6px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:3px}
-
-/* LAYOUT */
-.app{display:flex;min-height:var(--app-vh)}
-.sidebar{width:var(--sidebar-collapsed);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:6px;position:fixed;height:var(--app-vh);z-index:100;transition:width 0.3s cubic-bezier(0.4,0,0.2,1);overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
-.sidebar.expanded{width:var(--sidebar-expanded)}
-.sidebar-logo{width:44px;height:44px;background:linear-gradient(145deg,var(--bg3),var(--surface));border:1px solid var(--border2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;flex-shrink:0;cursor:pointer;transition:all 0.2s}
-.sidebar-logo:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
-.sidebar.expanded .sidebar-logo{width:192px;justify-content:flex-start;gap:10px;padding:0 12px;border-radius:var(--radius-sm)}
-.sidebar-brand-mark{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:linear-gradient(140deg,var(--accent),var(--accent2));font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:0.4px;color:white;flex-shrink:0}
-.sidebar-brand-copy{display:none;flex-direction:column;gap:2px;min-width:0}
-.sidebar.expanded .sidebar-brand-copy{display:flex}
-.sidebar-brand-name{font-family:var(--font-display);font-size:14px;line-height:1;color:var(--text)}
-.sidebar-brand-sub{font-family:var(--font-mono);font-size:10px;line-height:1;color:var(--text3);letter-spacing:0.9px;text-transform:uppercase}
-.sidebar-toggle-glyph{display:none;width:14px;height:14px;stroke:var(--text3);stroke-width:2.2;fill:none;flex-shrink:0;margin-left:auto}
-.sidebar.expanded .sidebar-toggle-glyph{display:block}
-.nav-item{width:44px;height:44px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;color:var(--text3);position:relative;flex-shrink:0;overflow:hidden}
-.sidebar.expanded .nav-item{width:192px;justify-content:flex-start;gap:12px;padding:0 12px}
-.nav-item:hover{background:var(--surface);color:var(--text2)}
-.nav-item.active{background:var(--accent-glow);color:var(--accent)}
-.nav-item svg{width:20px;height:20px;flex-shrink:0;display:block}
-.nav-label{font-family:var(--font-body);font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;max-width:0;opacity:0;transition:max-width 0.2s ease,opacity 0.2s ease}
-.sidebar.expanded .nav-label{max-width:140px;opacity:1}
-.nav-divider{width:32px;height:1px;background:var(--border);margin:8px 0;flex-shrink:0}
-.sidebar.expanded .nav-divider{width:192px}
-.sidebar-bottom{margin-top:auto}
-
-.main{margin-left:var(--sidebar-collapsed);flex:1;min-width:0;transition:margin-left 0.3s cubic-bezier(0.4,0,0.2,1)}
-.sidebar.expanded~.main{margin-left:var(--sidebar-expanded)}
-.page{display:none;padding:32px;animation:fadeIn 0.3s ease;width:100%;max-width:1600px;margin:0 auto}
-.page.active{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-
-/* TYPOGRAPHY */
-.page-title{font-family:var(--font-display);font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px}
-.page-subtitle{font-size:14px;color:var(--text3);margin-bottom:32px;font-weight:300}
-h3{font-family:var(--font-display);font-size:16px;font-weight:600;letter-spacing:0.2px}
-
-/* CARDS */
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px}
-.card-sm{padding:16px}
-.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:14px;font-weight:500;border:none;cursor:pointer;transition:all 0.2s;line-height:1}
-.btn-primary{background:var(--accent);color:white}
-.btn-primary:hover{background:var(--accent2);box-shadow:0 0 20px var(--accent-glow)}
-.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
-.btn-ghost:hover{background:var(--surface);border-color:var(--border2);color:var(--text)}
-.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid transparent}
-.btn-danger:hover{border-color:var(--red)}
-.btn-success{background:var(--green-dim);color:var(--green);border:1px solid transparent}
-.btn-success:hover{border-color:var(--green)}
-.btn-icon{width:36px;height:36px;padding:0;justify-content:center;flex-shrink:0}
-.btn-icon svg{width:16px;height:16px}
-.btn-lg{padding:14px 28px;font-size:16px;border-radius:12px}
-.btn-xl{padding:18px 36px;font-size:18px;border-radius:14px;gap:12px}
-.btn-xl svg{width:22px;height:22px}
-
-/* INPUTS */
-.input{width:100%;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font-body);font-size:14px;transition:border-color 0.2s,box-shadow 0.2s}
-.input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
-.input::placeholder{color:var(--text3)}
-select.input{cursor:pointer}
-option{background:var(--surface)}
-
-/* BADGE */
-.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;font-family:var(--font-mono)}
-.badge-green{background:var(--green-dim);color:var(--green)}
-.badge-red{background:var(--red-dim);color:var(--red)}
-.badge-orange{background:var(--orange-dim);color:var(--orange)}
-.badge-cyan{background:var(--cyan-dim);color:var(--cyan)}
-.badge-accent{background:var(--accent-glow);color:var(--accent2)}
-.badge-yellow{background:var(--yellow-dim);color:var(--yellow)}
-
-/* TAG */
-.tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;transition:all 0.15s;border:1px solid transparent}
-.tag:hover{border-color:var(--border2)}
-.tag.selected{border-color:currentColor}
-
-/* PROGRESS */
-.progress-bar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;border-radius:2px;transition:width 0.5s ease}
-
-/* GRID LAYOUTS */
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-
-/* STAT CARD */
-.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:8px}
-.stat-value{font-family:var(--font-mono);font-size:28px;font-weight:500;letter-spacing:-1px}
-.stat-label{font-size:13px;color:var(--text3)}
-.stat-change{font-size:12px;display:flex;align-items:center;gap:4px}
-.stat-change.up{color:var(--green)}
-.stat-change.down{color:var(--red)}
-
-/* ========================
-   POMODORO PAGE
-   ======================== */
-.pomodoro-layout{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start}
-.pomo-center{display:flex;flex-direction:column;align-items:center}
-.pomo-tabs{display:flex;gap:4px;background:var(--bg3);border-radius:10px;padding:4px;margin-bottom:40px}
-.pomo-tab{padding:8px 20px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;color:var(--text3)}
-.pomo-tab.active{background:var(--surface2);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
-
-/* RING TIMER */
-.ring-container{position:relative;width:280px;height:280px;margin-bottom:36px}
-.ring-bg{position:absolute;inset:0}
-.ring-svg{width:100%;height:100%;transform:rotate(-90deg)}
-.ring-track{fill:none;stroke:var(--surface2);stroke-width:8}
-.ring-progress{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 0.5s ease,stroke 0.5s ease}
-.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
-.ring-time{font-family:var(--font-mono);font-size:52px;font-weight:500;letter-spacing:-2px;line-height:1}
-.ring-label{font-size:13px;color:var(--text3);font-weight:300;letter-spacing:1px;text-transform:uppercase}
-.ring-session{font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--font-mono)}
-
-/* POMO DOTS */
-.pomo-dots{display:flex;gap:8px;margin-bottom:32px}
-.pomo-dot{width:10px;height:10px;border-radius:50%;background:var(--surface2);transition:all 0.3s}
-.pomo-dot.done{background:var(--accent)}
-.pomo-dot.current{background:var(--accent2);box-shadow:0 0 8px var(--accent)}
-
-/* CONTROLS */
-.pomo-controls{display:flex;align-items:center;gap:12px}
-.pomo-btn-main{width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;font-size:22px;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
-.pomo-btn-main svg{width:22px;height:22px;display:block}
-.pomo-btn-main.play{background:var(--accent);color:white;box-shadow:0 0 30px var(--accent-glow)}
-.pomo-btn-main.play:hover{background:var(--accent2);transform:scale(1.05)}
-.pomo-btn-main.pause{background:var(--surface2);color:var(--text)}
-.pomo-btn-main.pause:hover{background:var(--surface);transform:scale(1.05)}
-.pomo-btn-side{width:48px;height:48px;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text3);display:flex;align-items:center;justify-content:center;transition:all 0.2s}
-.pomo-btn-side:hover{background:var(--surface);color:var(--text);border-color:var(--border2)}
-.pomo-btn-side svg{width:18px;height:18px}
-
-/* POMO SIDEBAR */
-.pomo-settings{display:flex;flex-direction:column;gap:16px}
-.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg3);border-radius:var(--radius-sm);border:1px solid var(--border)}
-.setting-label{font-size:13px;color:var(--text2)}
-.number-input{display:flex;align-items:center;gap:8px}
-.num-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;font-size:14px;transition:all 0.15s}
-.num-btn:hover{background:var(--surface2);color:var(--text)}
-.num-val{font-family:var(--font-mono);font-size:14px;font-weight:500;min-width:28px;text-align:center}
-
-/* POMO LOG */
-.pomo-log{display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto}
-.log-entry{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:var(--radius-sm);border-left:3px solid transparent}
-.log-entry.work{border-left-color:var(--accent)}
-.log-entry.short-break{border-left-color:var(--green)}
-.log-entry.long-break{border-left-color:var(--cyan)}
-.log-entry-label{font-size:13px;flex:1}
-.log-entry-time{font-family:var(--font-mono);font-size:11px;color:var(--text3)}
-.log-entry-task{font-size:11px;color:var(--text3);margin-top:2px}
-
-/* SOUND TOGGLE */
-.toggle{position:relative;width:40px;height:22px;cursor:pointer}
-.toggle input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;background:var(--surface2);border-radius:11px;transition:0.3s}
-.toggle-slider::before{content:'';position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:var(--text3);border-radius:50%;transition:0.3s}
-.toggle input:checked+.toggle-slider{background:var(--accent)}
-.toggle input:checked+.toggle-slider::before{transform:translateX(18px);background:white}
-
-/* TASK INPUT FOR POMO */
-.pomo-task-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--text);font-family:var(--font-body);font-size:14px;text-align:center;transition:border-color 0.2s}
-.pomo-task-input:focus{outline:none;border-color:var(--accent)}
-.pomo-task-input::placeholder{color:var(--text3)}
-
-/* ========================
-   TODO PAGE
-   ======================== */
-.todo-layout{display:grid;grid-template-columns:240px 1fr;gap:24px;align-items:start}
-.todo-sidebar{display:flex;flex-direction:column;gap:8px}
-.todo-list-item{padding:10px 14px;border-radius:var(--radius-sm);cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:space-between;font-size:14px;color:var(--text2)}
-.todo-list-item:hover{background:var(--bg3);color:var(--text)}
-.todo-list-item.active{background:var(--accent-glow);color:var(--accent)}
-.todo-list-count{font-family:var(--font-mono);font-size:11px;background:var(--surface);padding:2px 6px;border-radius:10px}
-.todo-main{display:flex;flex-direction:column;gap:16px}
-.todo-toolbar{display:flex;gap:10px;align-items:center}
-.todo-add-row{display:flex;gap:10px}
-.todo-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);transition:all 0.2s}
-.todo-item:hover{border-color:var(--border2)}
-.todo-item.completed .todo-text{text-decoration:line-through;color:var(--text3)}
-.todo-item.completed{opacity:0.6}
-.todo-checkbox{width:20px;height:20px;border-radius:5px;border:2px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;margin-top:1px}
-.todo-checkbox.checked{background:var(--accent);border-color:var(--accent)}
-.todo-checkbox svg{width:12px;height:12px;fill:white;opacity:0;transition:opacity 0.15s}
-.todo-checkbox.checked svg{opacity:1}
-.todo-content{flex:1;min-width:0}
-.todo-text{font-size:14px;line-height:1.5;word-break:break-word}
-.todo-meta{display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap}
-.todo-actions{display:flex;gap:4px;opacity:0;transition:opacity 0.2s}
-.todo-item:hover .todo-actions{opacity:1}
-.todo-priority{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:6px}
-.todo-priority.high{background:var(--red)}
-.todo-priority.medium{background:var(--orange)}
-.todo-priority.low{background:var(--green)}
-.todo-priority.none{background:var(--surface2)}
-.todo-edit-input{background:transparent;border:none;color:var(--text);font-family:var(--font-body);font-size:14px;width:100%;outline:none}
-
-/* SUBTASKS */
-.subtask-list{margin-top:10px;padding-left:8px;display:flex;flex-direction:column;gap:6px}
-.subtask-item{display:flex;align-items:center;gap:8px;font-size:13px}
-.subtask-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s}
-.subtask-check.checked{background:var(--accent);border-color:var(--accent)}
-
-/* FILTER CHIPS */
-.filter-chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);color:var(--text3);transition:all 0.2s;background:transparent}
-.chip:hover,.chip.active{background:var(--accent-glow);border-color:var(--accent);color:var(--accent)}
-
-/* ========================
-   TIMER PAGE
-   ======================== */
-.timer-layout{display:grid;grid-template-columns:1fr 280px;gap:24px}
-.timer-display{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 40px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg)}
-.timer-time-big{font-family:var(--font-mono);font-size:80px;font-weight:300;letter-spacing:-4px;line-height:1;color:var(--text)}
-.timer-time-big.running{color:var(--accent2)}
-.timer-time-big.done{color:var(--green)}
-.timer-label-big{font-size:14px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-top:12px;font-weight:300}
-.timer-controls{display:flex;gap:12px;margin-top:36px;align-items:center}
-.timer-presets{display:flex;flex-direction:column;gap:10px}
-.preset-item{padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:space-between}
-.preset-item:hover{border-color:var(--border2);background:var(--surface)}
-.preset-item.active{border-color:var(--accent);background:var(--accent-glow)}
-.preset-name{font-size:14px;font-weight:500}
-.preset-duration{font-family:var(--font-mono);font-size:12px;color:var(--text3)}
-.custom-time-input{display:flex;gap:6px;align-items:center;margin-top:16px}
-.time-seg{width:56px;text-align:center;font-family:var(--font-mono);font-size:18px}
-.time-colon{font-family:var(--font-mono);font-size:20px;color:var(--text3);margin-bottom:2px}
-
-/* ========================
-   STOPWATCH PAGE
-   ======================== */
-.sw-display{display:flex;flex-direction:column;align-items:center;padding:48px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg)}
-.sw-time{font-family:var(--font-mono);font-size:72px;font-weight:300;letter-spacing:-3px;line-height:1;color:var(--text)}
-.sw-time.running{color:var(--cyan)}
-.sw-ms{font-size:36px;color:var(--text3)}
-.sw-controls{display:flex;gap:12px;margin-top:32px}
-.laps-container{max-height:380px;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
-.lap-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg3);border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:13px}
-.lap-num{color:var(--text3);min-width:32px}
-.lap-time{flex:1}
-.lap-split{color:var(--text3)}
-.lap-item.best .lap-time{color:var(--green)}
-.lap-item.worst .lap-time{color:var(--red)}
-.lap-item.best .lap-split{color:var(--green)}
-.lap-item.worst .lap-split{color:var(--red)}
-
-/* ========================
-   TIME TRACKING PAGE
-   ======================== */
-.tracking-layout{display:grid;grid-template-columns:1fr 300px;gap:24px}
-.tracker-bar{display:flex;gap:12px;align-items:center;padding:16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:20px}
-.tracker-pulse{width:10px;height:10px;border-radius:50%;background:var(--surface2);flex-shrink:0;transition:all 0.3s}
-.tracker-pulse.active{background:var(--red);box-shadow:0 0 0 4px rgba(248,113,113,0.2);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(248,113,113,0.2)}50%{box-shadow:0 0 0 8px rgba(248,113,113,0.1)}}
-.tracker-time{font-family:var(--font-mono);font-size:22px;font-weight:500;letter-spacing:-1px;min-width:100px}
-.tracker-time.running{color:var(--red)}
-.tracker-desc{flex:1}
-.tracker-project{min-width:140px}
-.tracker-entries{display:flex;flex-direction:column;gap:8px}
-.entry-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);transition:all 0.2s}
-.entry-item:hover{border-color:var(--border2)}
-.entry-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.entry-desc{flex:1;font-size:14px}
-.entry-project{font-size:12px;color:var(--text3)}
-.entry-duration{font-family:var(--font-mono);font-size:13px;font-weight:500;color:var(--text2)}
-.entry-time{font-family:var(--font-mono);font-size:11px;color:var(--text3)}
-.entry-actions{display:flex;gap:4px;opacity:0;transition:opacity 0.15s}
-.entry-item:hover .entry-actions{opacity:1}
-.date-header{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;padding:8px 4px;margin-top:8px}
-
-/* PROJECT COLORS */
-.proj-dot-0{background:#7c6af7}.proj-dot-1{background:#4ade80}.proj-dot-2{background:#f87171}
-.proj-dot-3{background:#22d3ee}.proj-dot-4{background:#fbbf24}.proj-dot-5{background:#f472b6}
-.proj-dot-6{background:#fb923c}.proj-dot-7{background:#a78bfa}
-
-/* TIMELINE */
-.timeline-bar{display:flex;height:48px;border-radius:var(--radius-sm);overflow:hidden;gap:1px;margin-bottom:16px}
-.timeline-seg{height:100%;cursor:pointer;transition:opacity 0.15s;position:relative}
-.timeline-seg:hover{opacity:0.8}
-.timeline-tooltip{position:absolute;bottom:calc(100%+8px);left:50%;transform:translateX(-50%);background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:11px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:10}
-.timeline-seg:hover .timeline-tooltip{opacity:1}
-
-/* ========================
-   FOREST / ANALYTICS PAGE
-   ======================== */
-.forest-layout{display:flex;flex-direction:column;gap:24px}
-.heatmap-grid{display:grid;grid-template-columns:repeat(53,1fr);gap:3px}
-.heatmap-cell{aspect-ratio:1;border-radius:2px;transition:all 0.2s;cursor:pointer}
-.heatmap-cell:hover{transform:scale(1.3);z-index:1;position:relative}
-.heatmap-0{background:var(--surface)}
-.heatmap-1{background:rgba(124,106,247,0.25)}
-.heatmap-2{background:rgba(124,106,247,0.45)}
-.heatmap-3{background:rgba(124,106,247,0.7)}
-.heatmap-4{background:rgba(124,106,247,0.9)}
-.heatmap-5{background:#a594ff}
-.heatmap-months{display:flex;margin-bottom:4px;font-size:10px;color:var(--text3);font-family:var(--font-mono)}
-.heatmap-month{flex:1;text-align:center}
-
-/* TREE GARDEN */
-.garden-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:16px;padding:20px 0}
-.tree-item{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:transform 0.2s}
-.tree-item:hover{transform:translateY(-4px)}
-.tree-emoji{font-size:36px;line-height:1;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.3))}
-.tree-mins{font-family:var(--font-mono);font-size:11px;color:var(--text3)}
-.tree-date{font-size:10px;color:var(--text3)}
-.tree-dead{filter:grayscale(1) brightness(0.5)}
-
-/* CHART */
-.bar-chart{display:flex;align-items:flex-end;gap:8px;height:160px}
-.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%}
-.bar-wrap{flex:1;display:flex;align-items:flex-end;width:100%}
-.bar{width:100%;border-radius:4px 4px 0 0;transition:height 0.5s cubic-bezier(0.4,0,0.2,1);cursor:pointer;min-height:4px}
-.bar:hover{opacity:0.8;filter:brightness(1.1)}
-.bar-label{font-family:var(--font-mono);font-size:10px;color:var(--text3)}
-.bar-val{font-family:var(--font-mono);font-size:10px;color:var(--text2)}
-
-/* LINE CHART */
-.line-chart-svg{width:100%;height:120px}
-
-/* STREAK */
-.streak-display{display:flex;align-items:center;gap:16px;padding:20px}
-.streak-num{font-family:var(--font-mono);font-size:56px;font-weight:500;letter-spacing:-3px;line-height:1;color:var(--orange)}
-.streak-info{display:flex;flex-direction:column;gap:4px}
-.streak-label{font-size:14px;font-weight:500}
-.streak-sub{font-size:12px;color:var(--text3)}
-.streak-fire{font-size:40px;filter:drop-shadow(0 0 12px rgba(251,146,60,0.5))}
-
-/* ACHIEVEMENTS */
-.achievements-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
-.achievement{padding:16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);display:flex;gap:12px;align-items:flex-start;transition:all 0.2s}
-.achievement.unlocked{border-color:var(--accent);background:var(--accent-glow)}
-.achievement:hover{transform:translateY(-2px)}
-.ach-icon{font-size:28px;line-height:1}
-.ach-title{font-size:13px;font-weight:600;margin-bottom:2px}
-.ach-desc{font-size:11px;color:var(--text3)}
-.achievement.locked .ach-icon{filter:grayscale(1);opacity:0.4}
-.achievement.locked .ach-title{color:var(--text3)}
-
-/* FOCUS SCORE */
-.focus-score-ring{position:relative;width:120px;height:120px;margin:0 auto 16px}
-.focus-score-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
-.focus-score-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.focus-score-num{font-family:var(--font-mono);font-size:28px;font-weight:500}
-.focus-score-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
-
-/* ========================
-   MODAL
-   ======================== */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.3s}
-.modal-overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:480px;transform:translateY(20px);transition:transform 0.3s;max-height:90vh;overflow-y:auto}
-.modal-overlay.open .modal{transform:translateY(0)}
-.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-.modal-title{font-family:var(--font-display);font-size:18px;font-weight:600}
-.modal-close{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text3);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
-.modal-close:hover{background:var(--surface);color:var(--text)}
-.form-group{margin-bottom:16px}
-.form-label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:500}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-
-/* NOTIFICATION TOAST */
-.toasts{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:9999}
-.toast{padding:12px 18px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px;font-size:13px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);animation:slideIn 0.3s ease,slideOut 0.3s ease 3s forwards}
-@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-@keyframes slideOut{from{opacity:1}to{opacity:0;transform:translateX(100%)}}
-.toast-icon{font-size:16px}
-.toast-success{border-left:3px solid var(--green)}
-.toast-error{border-left:3px solid var(--red)}
-.toast-info{border-left:3px solid var(--accent)}
-
-/* EMPTY STATE */
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:var(--text3);gap:12px}
-.empty-state-icon{font-size:48px;opacity:0.5}
-.empty-state-text{font-size:15px;text-align:center}
-.empty-state-sub{font-size:13px;color:var(--text3);text-align:center}
-
-/* SETTINGS PAGE */
-.settings-sections{display:flex;flex-direction:column;gap:24px;max-width:640px}
-.settings-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
-.settings-section-title{padding:16px 24px;background:var(--bg3);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text3);border-bottom:1px solid var(--border)}
-.settings-row{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border)}
-.settings-row:last-child{border-bottom:none}
-.settings-row-label{font-size:14px;font-weight:500}
-.settings-row-sub{font-size:12px;color:var(--text3);margin-top:2px}
-.color-options{display:flex;gap:8px}
-.color-opt{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.15s}
-.color-opt.selected{border-color:white;transform:scale(1.2)}
-
-/* MISC */
-.divider{height:1px;background:var(--border);margin:8px 0}
-.tag-input{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);min-height:42px;cursor:text}
-.tag-input-field{border:none;background:transparent;color:var(--text);font-family:var(--font-body);font-size:14px;outline:none;flex:1;min-width:80px}
-.priority-select{display:flex;gap:6px}
-.prio-btn{padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text3);transition:all 0.15s}
-.prio-btn:hover{background:var(--surface)}
-.prio-btn.high.active{background:var(--red-dim);color:var(--red);border-color:var(--red)}
-.prio-btn.medium.active{background:var(--orange-dim);color:var(--orange);border-color:var(--orange)}
-.prio-btn.low.active{background:var(--green-dim);color:var(--green);border-color:var(--green)}
-.prio-btn.none.active{background:var(--surface2);color:var(--text2);border-color:var(--border2)}
-.section-gap{display:flex;flex-direction:column;gap:16px}
-.flex-row{display:flex;align-items:center;gap:12px}
-.flex-col{display:flex;flex-direction:column;gap:8px}
-.spacer{flex:1}
-.text-sm{font-size:13px;color:var(--text2)}
-.text-xs{font-size:11px;color:var(--text3)}
-.text-mono{font-family:var(--font-mono)}
-.text-accent{color:var(--accent2)}
-.text-green{color:var(--green)}
-.text-red{color:var(--red)}
-.text-orange{color:var(--orange)}
-.fw-bold{font-weight:600}
-.mt-4{margin-top:4px}
-.mt-8{margin-top:8px}
-.mt-16{margin-top:16px}
-.mb-8{margin-bottom:8px}
-.mb-16{margin-bottom:16px}
-.w-full{width:100%}
-.flex-wrap{flex-wrap:wrap}
-.justify-between{justify-content:space-between}
-.align-center{align-items:center}
-
-/* TOP BAR */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,rgba(22,22,33,0.96),rgba(10,10,15,0.94));backdrop-filter:blur(8px);position:sticky;top:0;z-index:50}
-.topbar-left{display:flex;align-items:center;gap:16px}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.topbar-left,.topbar-right{min-width:0}
-.topbar-time{font-family:var(--font-mono);font-size:14px;color:var(--text3)}
-.topbar-date{font-size:12px;color:var(--text3)}
-
-.brand-pill{display:flex;align-items:center;gap:10px;padding:6px 12px;border-radius:999px;background:linear-gradient(90deg,rgba(124,106,247,0.22),rgba(34,211,238,0.2));border:1px solid rgba(255,255,255,0.16)}
-.brand-mark{width:22px;height:22px;border-radius:6px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:white;font-family:var(--font-display);font-size:12px;font-weight:700;line-height:1}
-.brand-word{font-family:var(--font-display);font-size:15px;letter-spacing:0.2px}
-
-/* AUTH */
-.auth-corner-btn{max-width:220px;display:inline-flex;align-items:center;gap:8px;padding:7px 11px;margin-left:2px;border:0}
-.auth-corner-btn:hover{border:0}
-.auth-corner-btn.auth-on{border:0;background:var(--accent-glow);color:var(--accent2)}
-.auth-corner-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0}
-.auth-corner-btn.auth-on .auth-corner-dot{background:var(--green)}
-.auth-corner-avatar{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface2);font-size:11px;font-weight:600;color:var(--text2);flex-shrink:0}
-.auth-corner-btn.auth-on .auth-corner-avatar{background:var(--accent);color:white}
-.auth-corner-text{display:inline-block;max-width:145px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
-.auth-helper{font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.4}
-.auth-status{font-size:12px;color:var(--text3);margin-top:10px}
-.auth-mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--bg3);padding:6px;border-radius:12px;margin-bottom:14px;border:1px solid var(--border)}
-.auth-mode-btn{border:none;border-radius:8px;padding:9px 12px;background:transparent;color:var(--text3);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s}
-.auth-mode-btn:hover{background:var(--surface)}
-.auth-mode-btn.active{background:var(--surface2);color:var(--text)}
-.auth-form-note{font-size:11px;color:var(--text3);margin-top:8px}
-
-/* HOME HERO */
-.home-hero{position:relative;overflow:hidden;background:radial-gradient(circle at 14% 0%,rgba(124,106,247,0.3),rgba(124,106,247,0) 45%),radial-gradient(circle at 82% 20%,rgba(34,211,238,0.2),rgba(34,211,238,0) 45%),linear-gradient(140deg,#171722,#101016);border:1px solid rgba(255,255,255,0.14);border-radius:22px;padding:28px;margin-bottom:24px;box-shadow:var(--shadow)}
-.home-hero::after{content:'';position:absolute;inset:auto -40px -70px auto;width:190px;height:190px;border-radius:999px;background:radial-gradient(circle,rgba(255,255,255,0.15),rgba(255,255,255,0));pointer-events:none}
-.home-hero-grid{display:grid;grid-template-columns:1.2fr 0.8fr;gap:18px;align-items:start;position:relative;z-index:1}
-.home-eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:1.4px;color:var(--accent2);margin-bottom:10px;text-transform:uppercase}
-.home-title{font-family:var(--font-display);font-size:34px;line-height:1.05;letter-spacing:-0.8px;margin-bottom:12px;max-width:16ch}
-.home-copy{font-size:14px;color:var(--text2);max-width:45ch;line-height:1.55;margin-bottom:16px}
-.home-actions{display:flex;gap:10px;flex-wrap:wrap}
-.home-metrics{display:grid;grid-template-columns:1fr;gap:10px}
-.home-metric{padding:12px 14px;border-radius:12px;background:rgba(0,0,0,0.22);border:1px solid rgba(255,255,255,0.12)}
-.home-metric-value{font-family:var(--font-mono);font-size:24px;line-height:1;color:var(--text)}
-.home-metric-label{font-size:11px;letter-spacing:0.6px;color:var(--text3);text-transform:uppercase;margin-top:6px}
-
-body.theme-light .topbar{background:linear-gradient(180deg,rgba(255,255,255,0.96),rgba(238,244,255,0.9));}
-body.theme-light .brand-pill{border-color:rgba(80,102,158,0.22);background:linear-gradient(90deg,rgba(124,106,247,0.16),rgba(34,211,238,0.16));}
-body.theme-light .home-hero{
-  background:
-    radial-gradient(circle at 14% 0%,rgba(124,106,247,0.2),rgba(124,106,247,0) 45%),
-    radial-gradient(circle at 82% 20%,rgba(34,211,238,0.18),rgba(34,211,238,0) 45%),
-    linear-gradient(140deg,#ffffff,#edf2ff);
-}
-body.theme-light .home-metric{background:rgba(255,255,255,0.76);border-color:var(--border)}
-
-/* AMBIENT SOUND INDICATOR */
-.ambient-badge{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;background:var(--bg3);border:1px solid var(--border);font-size:12px;color:var(--text3);cursor:pointer;transition:all 0.2s}
-.ambient-badge:hover{border-color:var(--border2)}
-.ambient-badge.playing{color:var(--accent2);border-color:var(--accent)}
-.ambient-wave{display:flex;gap:2px;align-items:center}
-.ambient-wave span{width:3px;background:currentColor;border-radius:1.5px;animation:wave 1.2s ease-in-out infinite}
-.ambient-wave span:nth-child(1){height:6px;animation-delay:0s}
-.ambient-wave span:nth-child(2){height:10px;animation-delay:0.15s}
-.ambient-wave span:nth-child(3){height:7px;animation-delay:0.3s}
-.ambient-wave span:nth-child(4){height:12px;animation-delay:0.1s}
-.ambient-wave span:nth-child(5){height:8px;animation-delay:0.2s}
-@keyframes wave{0%,100%{transform:scaleY(1)}50%{transform:scaleY(0.3)}}
-
-/* SCROLLABLE GARDEN */
-.garden-scroll{overflow-x:auto;padding-bottom:8px}
-
-/* GRID SAFETY */
-.pomodoro-layout>*,.todo-layout>*,.timer-layout>*,.tracking-layout>*,.grid-2>*,.grid-3>*,.grid-4>*{min-width:0}
-
-/* RESPONSIVE ADJUSTMENTS */
-@media(max-width:1200px){
-  .pomodoro-layout,.timer-layout,.tracking-layout{grid-template-columns:1fr}
-  .grid-4{grid-template-columns:repeat(2,1fr)}
-  .page{padding:24px}
-}
-@media(max-width:980px){
-  .todo-layout{grid-template-columns:1fr}
-  .grid-3{grid-template-columns:1fr 1fr}
-  .topbar{padding:14px 20px}
-  .home-hero-grid{grid-template-columns:1fr}
-  .home-title{font-size:30px;max-width:100%}
-  .home-metrics{grid-template-columns:repeat(3,1fr)}
-}
-@media(max-width:780px){
-  .sidebar{left:0;right:0;bottom:0;top:auto;width:100%;height:var(--mobile-nav-height);flex-direction:row;align-items:center;justify-content:flex-start;padding:8px 10px;gap:6px;border-right:none;border-top:1px solid var(--border);overflow-x:auto;overflow-y:hidden}
-  .sidebar.expanded{width:100%}
-  .sidebar-logo{display:none}
-  .sidebar-bottom{margin-top:0;display:flex}
-  .nav-divider{display:none}
-  .nav-item{width:auto;min-width:58px;height:56px;padding:0 10px;flex-direction:column;gap:3px;justify-content:center;border-radius:10px}
-  .sidebar.expanded .nav-item{width:auto;justify-content:center;gap:3px;padding:0 10px}
-  .nav-item svg{width:18px;height:18px}
-  .nav-label{opacity:1;font-size:10px;line-height:1;max-width:66px;text-overflow:ellipsis}
-  .main,.sidebar.expanded~.main{margin-left:0;padding-bottom:var(--mobile-nav-height)}
-  .page{padding:18px}
-  .topbar{padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap}
-  .topbar-left{min-width:0;display:flex;align-items:center;gap:8px;flex:1}
-  .topbar-right{min-width:0;display:flex;align-items:center;gap:6px;justify-content:flex-end;flex-shrink:0}
-  .topbar-date{display:none}
-  .ambient-badge{display:flex;padding:4px 7px;gap:4px;max-width:126px}
-  .ambient-badge #ambientLabel{display:inline-block;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .topbar-right .btn-icon{display:none}
-  .topbar-time{font-size:12px}
-  .brand-pill{padding:5px 9px;gap:7px}
-  .brand-word{font-size:13px}
-  .auth-corner-btn{max-width:152px;margin-left:0;padding:6px 9px}
-  .auth-corner-text{max-width:74px;font-size:11px}
-}
-@media(max-width:600px){
-  .page{padding:14px}
-  .topbar{padding:9px 10px}
-  .topbar-time{display:none}
-  .brand-word{display:inline;font-size:12px}
-  .brand-pill{padding:5px 8px}
-  .brand-mark{width:18px;height:18px;font-size:10px}
-  .ambient-badge{display:flex;padding:4px 6px;max-width:106px}
-  .ambient-badge #ambientLabel{max-width:58px;font-size:11px}
-  .auth-corner-btn{padding:5px 7px;max-width:42px;min-width:42px;justify-content:center}
-  .auth-corner-text{display:none}
-  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
-  .form-row{grid-template-columns:1fr}
-  .tracker-bar{flex-wrap:wrap}
-  .tracker-desc,.tracker-project{min-width:100%}
-  .timer-controls,.sw-controls{flex-wrap:wrap;justify-content:center}
-  .custom-time-input{width:100%;justify-content:center}
-  .ring-container{width:240px;height:240px}
-  .ring-time{font-size:44px}
-  .timer-time-big{font-size:56px;letter-spacing:-2px}
-  .sw-time{font-size:54px;letter-spacing:-2px}
-  .home-hero{padding:20px}
-  .home-title{font-size:26px}
-  .home-copy{font-size:13px}
-  .home-metrics{grid-template-columns:1fr}
-}
-@media(max-width:420px){
-  .nav-item{min-width:50px;padding:0 8px}
-  .nav-label{display:none}
-  .topbar{padding:9px 10px}
-  .topbar-right{gap:5px}
-  .ambient-badge{max-width:96px;padding:4px 6px}
-  .ambient-badge #ambientLabel{max-width:50px}
-  .auth-corner-btn{max-width:40px;min-width:40px;padding:5px 6px;gap:0}
-  .auth-corner-dot{display:none}
-  .auth-corner-avatar{width:18px;height:18px;font-size:10px}
-  .auth-corner-text{display:none}
-  .brand-pill{padding:5px 7px}
-  .brand-word{font-size:11px}
-  .home-title{font-size:23px}
-}
-
-/* DRAG OVER */
-.drag-over{border:2px dashed var(--accent)!important;background:var(--accent-glow)!important}
-.dragging{opacity:0.5}
-
-/* CONTEXT MENU */
-.ctx-menu{position:fixed;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:6px;z-index:2000;min-width:160px;box-shadow:var(--shadow-lg)}
-.ctx-item{padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;transition:background 0.15s}
-.ctx-item:hover{background:var(--surface)}
-.ctx-item.active{background:var(--surface);color:var(--text)}
-.ctx-item.danger{color:var(--red)}
-.ctx-divider{height:1px;background:var(--border);margin:4px 0}
-
-/* WEEK VIEW */
-.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
-.week-day{display:flex;flex-direction:column;align-items:center;gap:6px}
-.week-day-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:500}
-.week-day-num{font-family:var(--font-mono);font-size:13px}
-.week-day-bar{width:100%;background:var(--surface);border-radius:3px;height:80px;position:relative;overflow:hidden;cursor:pointer;transition:all 0.2s}
-.week-day-bar:hover{background:var(--surface2)}
-.week-day-fill{position:absolute;bottom:0;left:0;right:0;border-radius:3px;transition:height 0.5s ease}
-.week-day-val{font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:4px}
-.week-day.today .week-day-num{color:var(--accent2);font-weight:600}
-.week-day.today .week-day-label{color:var(--accent2)}
-
-/* NOTES IN TODO */
-.todo-note{font-size:12px;color:var(--text3);margin-top:4px;line-height:1.4;font-style:italic}
-
-/* RECUR BADGE */
-.recur-icon{font-size:10px;color:var(--text3)}
-
-/* FOCUS MODE OVERLAY */
-.focus-mode{position:fixed;inset:0;background:var(--bg);z-index:500;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px}
-.focus-mode.active{display:flex}
-.focus-mode-exit{position:absolute;top:24px;right:24px}
-
-/* PROGRESS RING COLORS */
-.ring-work{stroke:var(--accent)}
-.ring-short-break{stroke:var(--green)}
-.ring-long-break{stroke:var(--cyan)}
-
-/* CUSTOM SCROLLBAR FOR LAP */
-.laps-container::-webkit-scrollbar{width:4px}
-.laps-container::-webkit-scrollbar-thumb{background:var(--surface2)}
-
-/* TRANSITION HELPERS */
-.trans-all{transition:all 0.2s}
-
-/* LABEL */
-.label{font-size:12px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px}
-</style>
+<link rel="stylesheet" href="css/styles.css?v=2.2.0">
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to content</a>
 <div id="storageBanner" role="alert" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;padding:10px 16px;background:var(--red-dim);color:var(--red);border-bottom:1px solid var(--red);font-size:13px;text-align:center;backdrop-filter:blur(8px)"></div>
 
 <div class="app">
-  <!-- SIDEBAR -->
-  <nav class="sidebar" id="sidebar">
-    <div class="sidebar-logo" onclick="toggleSidebar()" title="Toggle sidebar">
-      <span class="sidebar-brand-mark">ZF</span>
-      <div class="sidebar-brand-copy">
+  <nav class="sidebar" id="sidebar" aria-label="Main">
+    <button type="button" class="sidebar-logo" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Expand sidebar" aria-expanded="false">
+      <span class="sidebar-brand-mark" aria-hidden="true">ZF</span>
+      <span class="sidebar-brand-copy">
         <span class="sidebar-brand-name">ZenFlow</span>
-        <span class="sidebar-brand-sub">Focus Suite</span>
-      </div>
-      <svg class="sidebar-toggle-glyph" viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>
-    </div>
+        <span class="sidebar-brand-sub">Focus suite</span>
+      </span>
+      <svg aria-hidden="true" focusable="false" class="sidebar-toggle-glyph" viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>
+    </button>
 
-    <div class="nav-item active" onclick="navigate('pomodoro')" data-page="pomodoro" title="Pomodoro">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-      <span class="nav-label">Pomodoro</span>
-    </div>
-    <div class="nav-item" onclick="navigate('todo')" data-page="todo" title="Tasks">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-      <span class="nav-label">Tasks</span>
-    </div>
-    <div class="nav-item" onclick="navigate('timer')" data-page="timer" title="Timer">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/><circle cx="12" cy="12" r="6"/></svg>
-      <span class="nav-label">Timer</span>
-    </div>
-    <div class="nav-item" onclick="navigate('stopwatch')" data-page="stopwatch" title="Stopwatch">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 6V4m0 0H9m3 0h3"/><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/></svg>
-      <span class="nav-label">Stopwatch</span>
-    </div>
-    <div class="nav-item" onclick="navigate('tracking')" data-page="tracking" title="Time Tracking">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span class="nav-label">Time Log</span>
-    </div>
-    <div class="nav-divider"></div>
-    <div class="nav-item" onclick="navigate('forest')" data-page="forest" title="Forest & Analytics">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg>
-      <span class="nav-label">Analytics</span>
-    </div>
+    <button type="button" class="nav-item active" onclick="navigate('pomodoro')" data-page="pomodoro" aria-label="Focus" aria-current="page">
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/></svg>
+      <span class="nav-label">Focus</span><span class="nav-short" aria-hidden="true">Focus</span>
+    </button>
+    <button type="button" class="nav-item" onclick="navigate('todo')" data-page="todo" aria-label="Tasks">
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span class="nav-label">Tasks</span><span class="nav-short" aria-hidden="true">Tasks</span>
+    </button>
+    <button type="button" class="nav-item" onclick="navigate('calendar')" data-page="calendar" aria-label="Calendar">
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+      <span class="nav-label">Calendar</span><span class="nav-short" aria-hidden="true">Calendar</span>
+    </button>
+    <button type="button" class="nav-item" onclick="navigate('timer')" data-page="timer" aria-label="Timer">
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></svg>
+      <span class="nav-label">Timer</span><span class="nav-short" aria-hidden="true">Timer</span>
+    </button>
+    <button type="button" class="nav-item" onclick="navigate('stopwatch')" data-page="stopwatch" aria-label="Stopwatch">
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4"/><path d="M12 14l3-3"/><circle cx="12" cy="14" r="8"/></svg>
+      <span class="nav-label">Stopwatch</span><span class="nav-short" aria-hidden="true">Stopwatch</span>
+    </button>
+    <button type="button" class="nav-item" onclick="navigate('tracking')" data-page="tracking" aria-label="Time log">
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+      <span class="nav-label">Time log</span><span class="nav-short" aria-hidden="true">Log</span>
+    </button>
+    <button type="button" class="nav-item" onclick="navigate('forest')" data-page="forest" aria-label="Stats">
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+      <span class="nav-label">Stats</span><span class="nav-short" aria-hidden="true">Stats</span>
+    </button>
+    <button type="button" class="nav-item nav-more" id="navMore" onclick="openModal('modalMore')" aria-label="More pages" aria-haspopup="dialog">
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+      <span class="nav-short" aria-hidden="true">More</span>
+    </button>
     <div class="nav-divider"></div>
     <div class="sidebar-bottom">
-      <div class="nav-item" onclick="navigate('settings')" data-page="settings" title="Settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-        <span class="nav-label">Settings</span>
-      </div>
+      <button type="button" class="nav-item" onclick="navigate('settings')" data-page="settings" aria-label="Settings">
+        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span class="nav-label">Settings</span><span class="nav-short" aria-hidden="true">Settings</span>
+      </button>
     </div>
   </nav>
 
-  <!-- MAIN CONTENT -->
-  <div class="main" id="main">
-    <!-- TOPBAR -->
-    <div class="topbar">
+  <main class="main" id="main" tabindex="-1">
+    <header class="topbar">
       <div class="topbar-left">
-        <div class="brand-pill">
-          <span class="brand-mark">Z</span>
-          <span class="brand-word">ZenFlow</span>
-        </div>
-        <span class="topbar-time text-mono" id="clock">00:00:00</span>
+        <div class="brand"><span class="brand-mark" aria-hidden="true">Z</span><span class="brand-word">ZenFlow</span></div>
+        <span class="topbar-time" id="clock">00:00:00</span>
         <span class="topbar-date" id="topdate"></span>
       </div>
       <div class="topbar-right">
-        <div class="ambient-badge" id="ambientBadge" onclick="toggleAmbient()">
-          <div class="ambient-wave" id="ambientWave" style="display:none">
-            <span></span><span></span><span></span><span></span><span></span>
-          </div>
+        <button type="button" class="ambient-badge" id="ambientBadge" onclick="toggleAmbient()" aria-haspopup="menu" aria-expanded="false" aria-controls="ctxMenu">
+          <span class="ambient-wave" id="ambientWave" style="display:none" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></span>
           <span id="ambientLabel">🎵 Ambient</span>
-        </div>
-        <button class="btn btn-ghost btn-icon" onclick="openFocusMode()" title="Focus Mode">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
         </button>
-        <button class="btn btn-ghost auth-corner-btn" id="authCornerBtn" onclick="openAuthModal()" title="Optional account login">
-          <span class="auth-corner-dot"></span>
-          <span class="auth-corner-avatar" id="authCornerAvatar">Z</span>
-          <span class="auth-corner-text" id="authCornerText">Login</span>
+        <button type="button" class="btn btn-ghost btn-icon" onclick="openFocusMode()" title="Focus mode" aria-label="Open focus mode">
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+        </button>
+        <button type="button" class="btn btn-ghost auth-corner-btn" id="authCornerBtn" onclick="openAuthModal()" title="Account and sync">
+          <span class="auth-corner-dot" aria-hidden="true"></span>
+          <span class="auth-corner-avatar" id="authCornerAvatar" aria-hidden="true">Z</span>
+          <span class="auth-corner-text" id="authCornerText">Log in</span>
         </button>
       </div>
-    </div>
+    </header>
 
-    <!-- ===================== POMODORO ===================== -->
-    <div class="page active" id="page-pomodoro">
-      <div class="home-hero">
-        <div class="home-hero-grid">
-          <div>
-            <div class="home-title" id="heroWelcomeTitle">Own your day with calm, intentional focus.</div>
-            <div class="home-copy">Design your focus rhythm, track deep work, and keep progress synced without breaking flow.</div>
-            <div class="home-actions">
-              <button class="btn btn-primary" onclick="togglePomodoro()">Start Focus Session</button>
-              <button class="btn btn-ghost" id="heroAccountBtn" onclick="openAuthModal()">Account & Sync</button>
-            </div>
-          </div>
-          <div class="home-metrics">
-            <div class="home-metric">
-              <div class="home-metric-value" id="heroTodayFocus">0m</div>
-              <div class="home-metric-label">Today Focused</div>
-            </div>
-            <div class="home-metric">
-              <div class="home-metric-value" id="heroTotalSessions">0</div>
-              <div class="home-metric-label">Total Sessions</div>
-            </div>
-            <div class="home-metric">
-              <div class="home-metric-value" id="heroStreakDays">0d</div>
-              <div class="home-metric-label">Current Streak</div>
-            </div>
-          </div>
+    <!-- FOCUS ============================================================ -->
+    <section class="page active" id="page-pomodoro" aria-labelledby="focusTitle">
+      <header class="page-head">
+        <div>
+          <h1 class="page-title" id="focusTitle" tabindex="-1">Focus</h1>
+          <p class="page-subtitle" id="heroWelcomeTitle">Pick a task and start a session.</p>
         </div>
-      </div>
-      <div class="page-title">Pomodoro Timer</div>
-      <div class="page-subtitle">Stay focused with structured work intervals</div>
+        <dl class="stat-strip" aria-label="At a glance">
+          <div class="stat-strip-item"><dt>Today</dt><dd id="heroTodayFocus">0m</dd></div>
+          <div class="stat-strip-item"><dt>Sessions</dt><dd id="heroTotalSessions">0</dd></div>
+          <div class="stat-strip-item"><dt>Streak</dt><dd id="heroStreakDays">0d</dd></div>
+        </dl>
+      </header>
       <div class="pomodoro-layout">
-        <div class="card">
+        <div class="card timer-card">
           <div class="pomo-center">
-            <div class="pomo-tabs">
-              <div class="pomo-tab active" onclick="setPomoMode('work',this)">Focus</div>
-              <div class="pomo-tab" onclick="setPomoMode('short-break',this)">Short Break</div>
-              <div class="pomo-tab" onclick="setPomoMode('long-break',this)">Long Break</div>
+            <div class="pomo-tabs" role="group" aria-label="Timer mode">
+              <button type="button" class="pomo-tab active" aria-pressed="true" onclick="setPomoMode('work',this)">Focus</button>
+              <button type="button" class="pomo-tab" aria-pressed="false" onclick="setPomoMode('short-break',this)">Short break</button>
+              <button type="button" class="pomo-tab" aria-pressed="false" onclick="setPomoMode('long-break',this)">Long break</button>
             </div>
             <div class="ring-container">
-              <svg class="ring-svg" viewBox="0 0 280 280">
+              <svg aria-hidden="true" focusable="false" class="ring-svg" viewBox="0 0 280 280">
                 <circle class="ring-track" cx="140" cy="140" r="126"/>
-                <circle class="ring-progress ring-work" id="pomoRing" cx="140" cy="140" r="126"
-                  stroke-dasharray="792" stroke-dashoffset="0"/>
+                <circle class="ring-progress ring-work" id="pomoRing" cx="140" cy="140" r="126" stroke-dasharray="792" stroke-dashoffset="0"/>
               </svg>
               <div class="ring-center">
-                <div class="ring-time" id="pomoDisplay">25:00</div>
-                <div class="ring-label" id="pomoModeLabel">FOCUS</div>
+                <div class="ring-time" id="pomoDisplay" role="timer" aria-live="off">25:00</div>
+                <div class="ring-label" id="pomoModeLabel">Focus</div>
                 <div class="ring-session" id="pomoSession">Session 1 of 4</div>
               </div>
             </div>
-            <div class="pomo-dots" id="pomoDots">
-              <div class="pomo-dot current"></div>
-              <div class="pomo-dot"></div>
-              <div class="pomo-dot"></div>
-              <div class="pomo-dot"></div>
-            </div>
-            <input class="pomo-task-input" id="pomoTask" placeholder="What are you working on? (optional)" maxlength="80">
-            <div class="pomo-controls mt-16">
-              <button class="pomo-btn-side" onclick="skipPomodoro()" title="Skip">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l10 8-10 8V4z"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+            <div class="pomo-dots" id="pomoDots" aria-hidden="true"></div>
+            <input class="pomo-task-input" id="pomoTask" aria-label="What are you working on?" placeholder="What are you working on?" maxlength="80">
+            <div class="pomo-controls">
+              <button type="button" class="pomo-btn-side" onclick="resetPomodoro()" title="Reset session" aria-label="Reset session">
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
               </button>
-              <button class="pomo-btn-main play" id="pomoBtnMain" onclick="togglePomodoro()">
-                <svg id="pomoPlayIcon" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+              <button type="button" class="pomo-btn-main play" id="pomoBtnMain" onclick="togglePomodoro()" aria-label="Start session">
+                <svg aria-hidden="true" focusable="false" id="pomoPlayIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
               </button>
-              <button class="pomo-btn-side" onclick="resetPomodoro()" title="Reset">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              <button type="button" class="pomo-btn-side" onclick="skipPomodoro()" title="Skip to next phase" aria-label="Skip to next phase">
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4l10 8-10 8V4z"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
               </button>
             </div>
+            <p class="shortcut-hint"><kbd>Space</kbd> start or pause</p>
           </div>
         </div>
 
         <div class="pomo-settings">
-          <div class="card card-sm">
-            <div class="card-header"><h3>Timer Settings</h3></div>
-            <div class="section-gap">
-              <div class="setting-row">
-                <span class="setting-label">Focus Duration</span>
+          <section class="card card-sm" aria-labelledby="sessionSettingsTitle">
+            <div class="card-header"><h2 class="card-title" id="sessionSettingsTitle">Session settings</h2></div>
+            <div class="stepper-grid">
+              <div class="stepper" role="group" aria-labelledby="lblWork">
+                <span class="stepper-label" id="lblWork">Focus</span>
                 <div class="number-input">
-                  <button class="num-btn" onclick="adjustPomo('work',-1)">−</button>
-                  <span class="num-val" id="workVal">25</span>
-                  <button class="num-btn" onclick="adjustPomo('work',1)">+</button>
-                  <span class="text-xs">min</span>
+                  <button type="button" class="num-btn" onclick="adjustPomo('work',-1)" aria-label="Decrease focus duration">−</button>
+                  <span class="num-val"><span id="workVal">25</span><small>min</small></span>
+                  <button type="button" class="num-btn" onclick="adjustPomo('work',1)" aria-label="Increase focus duration">+</button>
                 </div>
               </div>
-              <div class="setting-row">
-                <span class="setting-label">Short Break</span>
+              <div class="stepper" role="group" aria-labelledby="lblShort">
+                <span class="stepper-label" id="lblShort">Short break</span>
                 <div class="number-input">
-                  <button class="num-btn" onclick="adjustPomo('short',-1)">−</button>
-                  <span class="num-val" id="shortVal">5</span>
-                  <button class="num-btn" onclick="adjustPomo('short',1)">+</button>
-                  <span class="text-xs">min</span>
+                  <button type="button" class="num-btn" onclick="adjustPomo('short',-1)" aria-label="Decrease short break">−</button>
+                  <span class="num-val"><span id="shortVal">5</span><small>min</small></span>
+                  <button type="button" class="num-btn" onclick="adjustPomo('short',1)" aria-label="Increase short break">+</button>
                 </div>
               </div>
-              <div class="setting-row">
-                <span class="setting-label">Long Break</span>
+              <div class="stepper" role="group" aria-labelledby="lblLong">
+                <span class="stepper-label" id="lblLong">Long break</span>
                 <div class="number-input">
-                  <button class="num-btn" onclick="adjustPomo('long',-1)">−</button>
-                  <span class="num-val" id="longVal">15</span>
-                  <button class="num-btn" onclick="adjustPomo('long',1)">+</button>
-                  <span class="text-xs">min</span>
+                  <button type="button" class="num-btn" onclick="adjustPomo('long',-1)" aria-label="Decrease long break">−</button>
+                  <span class="num-val"><span id="longVal">15</span><small>min</small></span>
+                  <button type="button" class="num-btn" onclick="adjustPomo('long',1)" aria-label="Increase long break">+</button>
                 </div>
               </div>
-              <div class="setting-row">
-                <span class="setting-label">Sessions until long break</span>
+              <div class="stepper" role="group" aria-labelledby="lblSessions">
+                <span class="stepper-label" id="lblSessions">Long break every</span>
                 <div class="number-input">
-                  <button class="num-btn" onclick="adjustPomo('sessions',-1)">−</button>
-                  <span class="num-val" id="sessionsVal">4</span>
-                  <button class="num-btn" onclick="adjustPomo('sessions',1)">+</button>
+                  <button type="button" class="num-btn" onclick="adjustPomo('sessions',-1)" aria-label="Decrease sessions before a long break">−</button>
+                  <span class="num-val"><span id="sessionsVal">4</span><small>×</small></span>
+                  <button type="button" class="num-btn" onclick="adjustPomo('sessions',1)" aria-label="Increase sessions before a long break">+</button>
                 </div>
-              </div>
-              <div class="setting-row">
-                <span class="setting-label">Auto-start breaks</span>
-                <label class="toggle"><input type="checkbox" id="autoBreak" onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <span class="setting-label">Auto-start pomodoros</span>
-                <label class="toggle"><input type="checkbox" id="autoWork" onchange="saveSettings()"><span class="toggle-slider"></span></label>
-              </div>
-              <div class="setting-row">
-                <span class="setting-label">Sound alerts</span>
-                <label class="toggle"><input type="checkbox" id="soundToggle" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
               </div>
             </div>
-          </div>
-          <div class="card card-sm">
+            <div class="toggle-list">
+              <div class="setting-row">
+                <span class="setting-label" id="lblAutoBreak">Start breaks automatically</span>
+                <label class="toggle"><input type="checkbox" id="autoBreak" aria-labelledby="lblAutoBreak" onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+              <div class="setting-row">
+                <span class="setting-label" id="lblAutoWork">Start focus automatically</span>
+                <label class="toggle"><input type="checkbox" id="autoWork" aria-labelledby="lblAutoWork" onchange="saveSettings()"><span class="toggle-slider"></span></label>
+              </div>
+            </div>
+            <div class="card-footer-link"><button type="button" class="btn btn-link" onclick="navigate('settings')">Sounds and notifications →</button></div>
+          </section>
+          <section class="card card-sm" aria-labelledby="sessionLogTitle">
             <div class="card-header">
-              <h3>Session Log</h3>
-              <button class="btn btn-ghost btn-icon" onclick="clearPomoLog()" title="Clear">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6m4-6v6"/></svg>
+              <h2 class="card-title" id="sessionLogTitle">Session log</h2>
+              <button type="button" class="btn btn-ghost btn-icon" onclick="clearPomoLog()" title="Clear session log" aria-label="Clear session log">
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6m4-6v6"/></svg>
               </button>
             </div>
-            <div class="pomo-log" id="pomoLog">
-              <div class="empty-state" style="padding:20px">
-                <div class="empty-state-icon">🍅</div>
-                <div class="empty-state-sub">Sessions will appear here</div>
-              </div>
-            </div>
-          </div>
+            <div class="pomo-log" id="pomoLog"></div>
+          </section>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- ===================== TODO ===================== -->
-    <div class="page" id="page-todo">
-      <div class="flex-row mb-16 justify-between align-center">
+    <!-- TASKS ============================================================ -->
+    <section class="page" id="page-todo" aria-labelledby="tasksTitle">
+      <header class="page-head">
         <div>
-          <div class="page-title">Tasks</div>
-          <div class="page-subtitle">Organize your work and get things done</div>
+          <h1 class="page-title" id="tasksTitle" tabindex="-1">Tasks</h1>
+          <p class="page-subtitle">Plan what to work on next.</p>
         </div>
-        <button class="btn btn-primary" onclick="openAddTask()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add Task
+        <button type="button" class="btn btn-primary" onclick="openAddTask()">
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New task
         </button>
-      </div>
+      </header>
       <div class="todo-layout">
-        <div>
-          <div class="label">Lists</div>
-          <div class="todo-sidebar" id="todoListsSidebar"></div>
-          <div style="margin-top:12px">
-            <button class="btn btn-ghost w-full" onclick="openNewList()" style="justify-content:center">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              New List
-            </button>
-          </div>
-          <div class="divider" style="margin:20px 0"></div>
-          <div class="label">Tags</div>
-          <div id="todoTagsSidebar" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        <div class="todo-lists-col">
+          <h2 class="section-label" id="listsLabel">Lists</h2>
+          <div class="todo-sidebar" id="todoListsSidebar" role="group" aria-labelledby="listsLabel"></div>
+          <button type="button" class="btn btn-ghost w-full mt-8" onclick="openNewList()">
+            <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New list
+          </button>
+          <div class="divider"></div>
+          <h2 class="section-label" id="tagsLabel">Tags</h2>
+          <div id="todoTagsSidebar" role="group" aria-labelledby="tagsLabel" style="display:flex;flex-wrap:wrap;gap:6px"></div>
         </div>
         <div class="todo-main">
+          <div class="todo-add-row">
+            <input class="input" id="quickTaskInput" aria-label="Add a task" enterkeyhint="done" placeholder="Add a task and press Enter" onkeydown="quickAddTask(event)">
+            <button type="button" class="btn btn-primary" onclick="quickAddTask({key:'Enter'})">Add</button>
+          </div>
           <div class="todo-toolbar">
-            <div class="filter-chips" id="todoFilters">
-              <div class="chip active" data-filter="all" onclick="filterTodo('all',this)">All</div>
-              <div class="chip" data-filter="today" onclick="filterTodo('today',this)">Today</div>
-              <div class="chip" data-filter="upcoming" onclick="filterTodo('upcoming',this)">Upcoming</div>
-              <div class="chip" data-filter="completed" onclick="filterTodo('completed',this)">Completed</div>
-              <div class="chip" data-filter="priority-high" onclick="filterTodo('priority-high',this)">🔴 High Priority</div>
+            <div class="filter-chips" id="todoFilters" role="group" aria-label="Filter tasks">
+              <button type="button" class="chip active" data-filter="all" aria-pressed="true" onclick="filterTodo('all',this)">All</button>
+              <button type="button" class="chip" data-filter="today" aria-pressed="false" onclick="filterTodo('today',this)">Today</button>
+              <button type="button" class="chip" data-filter="upcoming" aria-pressed="false" onclick="filterTodo('upcoming',this)">Upcoming</button>
+              <button type="button" class="chip" data-filter="priority-high" aria-pressed="false" onclick="filterTodo('priority-high',this)">High priority</button>
+              <button type="button" class="chip" data-filter="completed" aria-pressed="false" onclick="filterTodo('completed',this)">Completed</button>
             </div>
             <div class="spacer"></div>
-            <select class="input" id="todoSort" onchange="setTodoSort(this.value)" style="width:auto;font-size:13px;padding:7px 10px">
-              <option value="created">Date Created</option>
+            <select class="input" id="todoSort" aria-label="Sort tasks" onchange="setTodoSort(this.value)" style="width:auto">
+              <option value="created">Newest first</option>
               <option value="priority">Priority</option>
-              <option value="due">Due Date</option>
+              <option value="due">Due date</option>
               <option value="name">Name</option>
             </select>
-          </div>
-          <div class="todo-add-row">
-            <input class="input" id="quickTaskInput" placeholder="Quick add a task... (press Enter)" onkeydown="quickAddTask(event)">
-            <button class="btn btn-primary" onclick="quickAddTask({key:'Enter'})">Add</button>
           </div>
           <div id="todoItems"></div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- ===================== TIMER ===================== -->
-    <div class="page" id="page-timer">
-      <div class="page-title">Countdown Timer</div>
-      <div class="page-subtitle">Set custom timers for any task</div>
-      <div class="timer-layout">
-        <div class="timer-display">
-          <div class="timer-time-big" id="timerDisplay">00:00:00</div>
-          <div class="timer-label-big" id="timerLabel">SET YOUR TIMER</div>
-          <div class="timer-controls">
-            <div class="custom-time-input">
-              <input class="input time-seg" id="timerH" type="number" min="0" max="23" value="0" placeholder="HH" oninput="updateTimerFromInput()">
-              <span class="time-colon">:</span>
-              <input class="input time-seg" id="timerM" type="number" min="0" max="59" value="5" placeholder="MM" oninput="updateTimerFromInput()">
-              <span class="time-colon">:</span>
-              <input class="input time-seg" id="timerS" type="number" min="0" max="59" value="0" placeholder="SS" oninput="updateTimerFromInput()">
+    <!-- CALENDAR ========================================================= -->
+    <section class="page" id="page-calendar" aria-labelledby="calendarTitle">
+      <header class="page-head cal-head">
+        <div>
+          <h1 class="page-title" id="calendarTitle" tabindex="-1">Calendar</h1>
+          <p class="page-subtitle">Events, reminders and alarms in one place.</p>
+        </div>
+        <div class="page-actions">
+          <button type="button" class="btn btn-ghost" onclick="ZenCalendarUI.openNew({kind:'reminder'})">🔔 Reminder</button>
+          <button type="button" class="btn btn-ghost" onclick="ZenCalendarUI.openNew({kind:'alarm'})">⏰ Alarm</button>
+          <button type="button" class="btn btn-primary" onclick="ZenCalendarUI.openNew({day: PF().calCursor || ZenCore.localDayKey()})">
+            <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New event
+          </button>
+        </div>
+      </header>
+      <div class="cal-layout">
+        <div class="cal-main card">
+          <div class="cal-toolbar">
+            <div class="cal-nav">
+              <button type="button" class="btn btn-ghost" onclick="ZenCalendarUI.goToday()">Today</button>
+              <button type="button" class="btn btn-ghost btn-icon" onclick="ZenCalendarUI.step(-1)" aria-label="Previous">
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 6 9 12 15 18"/></svg>
+              </button>
+              <button type="button" class="btn btn-ghost btn-icon" onclick="ZenCalendarUI.step(1)" aria-label="Next">
+                <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 6 15 12 9 18"/></svg>
+              </button>
+              <h2 class="cal-title" id="calTitle" aria-live="polite"></h2>
+            </div>
+            <div class="pomo-tabs" id="calViewSwitch" role="group" aria-label="View">
+              <button type="button" class="pomo-tab" data-view="month" aria-pressed="true" onclick="ZenCalendarUI.setView('month')">Month</button>
+              <button type="button" class="pomo-tab" data-view="week" aria-pressed="false" onclick="ZenCalendarUI.setView('week')">Week</button>
+              <button type="button" class="pomo-tab" data-view="agenda" aria-pressed="false" onclick="ZenCalendarUI.setView('agenda')">Agenda</button>
             </div>
           </div>
-          <div class="timer-controls mt-16">
-            <button class="btn btn-primary btn-lg" id="timerStartBtn" onclick="toggleTimer()">
-              <svg id="timerPlayIcon" viewBox="0 0 24 24" fill="white" style="width:16px;height:16px"><polygon points="5,3 19,12 5,21"/></svg>
-              Start
-            </button>
-            <button class="btn btn-ghost btn-lg" onclick="resetTimer()">Reset</button>
-            <button class="btn btn-ghost btn-lg" onclick="addTimerLap()">Lap</button>
-          </div>
-          <div id="timerLaps" style="margin-top:24px;width:100%;max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+          <div id="calendarView"></div>
         </div>
-        <div class="timer-presets">
-          <div class="label">Quick Presets</div>
-          <div id="timerPresetList"></div>
-          <div class="divider"></div>
-          <button class="btn btn-ghost w-full" onclick="openAddPreset()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Preset
-          </button>
-          <div class="divider" style="margin-top:16px"></div>
-          <div class="label">Recent Timers</div>
-          <div id="recentTimers" style="display:flex;flex-direction:column;gap:6px"></div>
-        </div>
+        <aside class="cal-side" id="calSidebar" aria-label="Calendars and reminders"></aside>
       </div>
-    </div>
+    </section>
 
-    <!-- ===================== STOPWATCH ===================== -->
-    <div class="page" id="page-stopwatch">
-      <div class="page-title">Stopwatch</div>
-      <div class="page-subtitle">Track elapsed time with lap splits</div>
-      <div class="grid-2">
+    <!-- TIMER ============================================================ -->
+    <section class="page" id="page-timer" aria-labelledby="timerTitle">
+      <header class="page-head">
+        <div>
+          <h1 class="page-title" id="timerTitle" tabindex="-1">Timer</h1>
+          <p class="page-subtitle">Count down any length of time.</p>
+        </div>
+      </header>
+      <div class="timer-layout">
+        <div class="timer-display" id="timerCard" data-state="idle">
+          <div class="timer-time-big" id="timerDisplay" role="timer" aria-live="off">00:05:00</div>
+          <div class="custom-time-input" role="group" aria-label="Duration">
+            <label class="time-field"><input class="input time-seg" id="timerH" type="number" inputmode="numeric" min="0" max="23" value="00" oninput="updateTimerFromInput()" onblur="this.value=String(Math.min(+this.max,Math.max(0,parseInt(this.value,10)||0))).padStart(2,'0');updateTimerFromInput()">hours</label>
+            <span class="time-colon" aria-hidden="true">:</span>
+            <label class="time-field"><input class="input time-seg" id="timerM" type="number" inputmode="numeric" min="0" max="59" value="05" oninput="updateTimerFromInput()" onblur="this.value=String(Math.min(+this.max,Math.max(0,parseInt(this.value,10)||0))).padStart(2,'0');updateTimerFromInput()">minutes</label>
+            <span class="time-colon" aria-hidden="true">:</span>
+            <label class="time-field"><input class="input time-seg" id="timerS" type="number" inputmode="numeric" min="0" max="59" value="00" oninput="updateTimerFromInput()" onblur="this.value=String(Math.min(+this.max,Math.max(0,parseInt(this.value,10)||0))).padStart(2,'0');updateTimerFromInput()">seconds</label>
+          </div>
+          <div class="timer-label-big" id="timerLabel">Set a duration</div>
+          <div class="timer-controls">
+            <button type="button" class="btn btn-primary btn-lg" id="timerStartBtn" onclick="toggleTimer()">Start</button>
+            <button type="button" class="btn btn-ghost btn-lg" id="timerResetBtn" onclick="resetTimer()" hidden>Reset</button>
+            <button type="button" class="btn btn-ghost btn-lg" id="timerLapBtn" onclick="addTimerLap()" hidden>Lap</button>
+          </div>
+          <div id="timerLaps" class="timer-laps" aria-label="Laps"></div>
+        </div>
+        <aside class="timer-presets" aria-labelledby="presetsLabel">
+          <h2 class="section-label" id="presetsLabel">Presets</h2>
+          <div id="timerPresetList" class="flex-col"></div>
+          <button type="button" class="btn btn-ghost w-full" onclick="openAddPreset()">
+            <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New preset
+          </button>
+          <h2 class="section-label mt-16" id="recentLabel">Recent</h2>
+          <div id="recentTimers" class="flex-col" aria-labelledby="recentLabel"></div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- STOPWATCH ======================================================== -->
+    <section class="page" id="page-stopwatch" aria-labelledby="swTitle">
+      <header class="page-head">
+        <div>
+          <h1 class="page-title" id="swTitle" tabindex="-1">Stopwatch</h1>
+          <p class="page-subtitle">Measure elapsed time with laps.</p>
+        </div>
+      </header>
+      <div class="sw-layout">
         <div class="sw-display">
-          <div class="sw-time" id="swDisplay"><span id="swMain">00:00:00</span><span class="sw-ms" id="swMs">.000</span></div>
+          <div class="sw-time" id="swDisplay" role="timer" aria-live="off"><span id="swMain">00:00:00</span><span class="sw-ms" id="swMs">.000</span></div>
           <div class="sw-controls">
-            <button class="btn btn-primary btn-xl" id="swStartBtn" onclick="toggleStopwatch()">
-              <svg id="swIcon" viewBox="0 0 24 24" fill="white" style="width:18px;height:18px"><polygon points="5,3 19,12 5,21"/></svg>
-              Start
-            </button>
-            <button class="btn btn-ghost btn-xl" id="swLapBtn" onclick="addLap()" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
-              Lap
-            </button>
-            <button class="btn btn-ghost btn-xl" id="swResetBtn" onclick="resetStopwatch()" disabled>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-              Reset
-            </button>
+            <button type="button" class="btn btn-primary btn-xl" id="swStartBtn" onclick="toggleStopwatch()">Start</button>
+            <button type="button" class="btn btn-ghost btn-xl" id="swLapBtn" onclick="addLap()" disabled>Lap</button>
+            <button type="button" class="btn btn-ghost btn-xl" id="swResetBtn" onclick="resetStopwatch()" disabled>Reset</button>
           </div>
         </div>
-        <div class="card">
+        <section class="card" aria-labelledby="lapsTitle">
           <div class="card-header">
-            <h3>Lap Times</h3>
+            <h2 class="card-title" id="lapsTitle">Laps</h2>
             <span class="badge badge-accent" id="lapCount">0 laps</span>
           </div>
-          <div class="laps-container" id="lapsList">
-            <div class="empty-state" style="padding:24px">
-              <div class="empty-state-icon">⏱️</div>
-              <div class="empty-state-sub">Lap times will appear here</div>
-            </div>
-          </div>
-        </div>
+          <div class="laps-container" id="lapsList"></div>
+        </section>
       </div>
-    </div>
+    </section>
 
-    <!-- ===================== TIME TRACKING ===================== -->
-    <div class="page" id="page-tracking">
-      <div class="flex-row mb-16 justify-between align-center">
+    <!-- TIME LOG ========================================================= -->
+    <section class="page" id="page-tracking" aria-labelledby="logTitle">
+      <header class="page-head">
         <div>
-          <div class="page-title">Time Tracker</div>
-          <div class="page-subtitle">Log and analyze how you spend your time</div>
+          <h1 class="page-title" id="logTitle" tabindex="-1">Time log</h1>
+          <p class="page-subtitle">Record where your time goes.</p>
         </div>
-        <button class="btn btn-ghost" onclick="openAddManualEntry()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Manual Entry
+        <button type="button" class="btn btn-ghost" onclick="openAddManualEntry()">
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add entry
         </button>
-      </div>
+      </header>
       <div class="tracker-bar">
-        <div class="tracker-pulse" id="trackerPulse"></div>
-        <div class="tracker-time" id="trackerTimer">00:00:00</div>
-        <input class="input tracker-desc" id="trackerDesc" placeholder="What are you working on?">
-        <select class="input tracker-project" id="trackerProject" style="width:160px">
-          <option value="">No Project</option>
-        </select>
-        <select class="input" id="trackerPriority" style="width:100px">
-          <option value="none">No Tag</option>
+        <div class="tracker-pulse" id="trackerPulse" aria-hidden="true"></div>
+        <div class="tracker-time" id="trackerTimer" role="timer" aria-live="off">00:00:00</div>
+        <input class="input tracker-desc" id="trackerDesc" aria-label="What are you working on?" placeholder="What are you working on?">
+        <select class="input tracker-project" id="trackerProject" aria-label="Project"><option value="">No project</option></select>
+        <select class="input" id="trackerPriority" aria-label="Tag">
+          <option value="none">No tag</option>
           <option value="work">Work</option>
           <option value="personal">Personal</option>
           <option value="learning">Learning</option>
           <option value="health">Health</option>
           <option value="other">Other</option>
         </select>
-        <button class="btn btn-success" id="trackerBtn" onclick="toggleTracking()">
-          <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><polygon points="5,3 19,12 5,21"/></svg>
-          Start
-        </button>
+        <button type="button" class="btn btn-success" id="trackerBtn" onclick="toggleTracking()">Start</button>
       </div>
       <div class="tracking-layout">
-        <div>
-          <div class="flex-row mb-8 justify-between align-center">
-            <div class="label">Time Entries</div>
-            <div class="filter-chips">
-              <div class="chip active" data-filter="all" onclick="filterTracking('all',this)">All</div>
-              <div class="chip" data-filter="today" onclick="filterTracking('today',this)">Today</div>
-              <div class="chip" data-filter="week" onclick="filterTracking('week',this)">This Week</div>
+        <section aria-labelledby="entriesLabel">
+          <div class="section-head">
+            <h2 class="section-label" id="entriesLabel">Entries</h2>
+            <div class="filter-chips" role="group" aria-label="Filter entries">
+              <button type="button" class="chip active" data-filter="all" aria-pressed="true" onclick="filterTracking('all',this)">All</button>
+              <button type="button" class="chip" data-filter="today" aria-pressed="false" onclick="filterTracking('today',this)">Today</button>
+              <button type="button" class="chip" data-filter="week" aria-pressed="false" onclick="filterTracking('week',this)">Last 7 days</button>
             </div>
           </div>
           <div id="trackingEntries"></div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:16px">
-          <div class="card card-sm">
-            <div class="label" style="margin-bottom:12px">Today's Summary</div>
+        </section>
+        <div class="tracking-side">
+          <section class="card card-sm" aria-labelledby="todaySumTitle">
+            <div class="card-header"><h2 class="card-title" id="todaySumTitle">Today</h2></div>
             <div id="trackingSummaryToday"></div>
-          </div>
-          <div class="card card-sm">
-            <div class="label" style="margin-bottom:12px">By Project</div>
+          </section>
+          <section class="card card-sm" aria-labelledby="byProjTitle">
+            <div class="card-header"><h2 class="card-title" id="byProjTitle">By project</h2></div>
             <div id="trackingByProject"></div>
-          </div>
-          <div class="card card-sm">
-            <div class="label" style="margin-bottom:12px">Manage Projects</div>
+          </section>
+          <section class="card card-sm" aria-labelledby="projTitle">
+            <div class="card-header"><h2 class="card-title" id="projTitle">Projects</h2></div>
             <div id="projectsList"></div>
-            <button class="btn btn-ghost w-full mt-8" onclick="openAddProject()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              New Project
+            <button type="button" class="btn btn-ghost w-full mt-8" onclick="openAddProject()">
+              <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New project
             </button>
-          </div>
+          </section>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- ===================== FOREST / ANALYTICS ===================== -->
-    <div class="page" id="page-forest">
-      <div class="page-title">Analytics & Forest</div>
-      <div class="page-subtitle">Track your productivity journey over time</div>
+    <!-- STATS ============================================================ -->
+    <section class="page" id="page-forest" aria-labelledby="statsTitle">
+      <header class="page-head">
+        <div>
+          <h1 class="page-title" id="statsTitle" tabindex="-1">Stats</h1>
+          <p class="page-subtitle">Your focus history, streaks and garden.</p>
+        </div>
+        <button type="button" class="btn btn-ghost" onclick="exportReport()">
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export report
+        </button>
+      </header>
 
       <div class="grid-4 mb-16" id="analyticsStats"></div>
 
       <div class="grid-2 mb-16">
-        <div class="card">
-          <div class="card-header">
-            <h3>🌿 Focus Garden</h3>
-            <span class="badge badge-green" id="gardenCount">0 trees</span>
-          </div>
-          <div class="garden-scroll">
-            <div class="garden-grid" id="gardenGrid"></div>
-          </div>
-          <div class="text-xs mt-8" style="text-align:center;color:var(--text3)">
-            Each tree = 1 completed focus session. Dead trees = sessions skipped after at least a minute.
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h3>🔥 Current Streak</h3>
-          </div>
+        <section class="card" aria-labelledby="streakTitle">
+          <div class="card-header"><h2 class="card-title" id="streakTitle">Streak</h2></div>
           <div class="streak-display">
-            <span class="streak-fire">🔥</span>
+            <span class="streak-fire" aria-hidden="true">🔥</span>
             <div class="streak-num" id="streakNum">0</div>
             <div class="streak-info">
-              <div class="streak-label">Day Streak</div>
-              <div class="streak-sub" id="streakSub">Start a session to begin!</div>
-              <div class="streak-sub mt-4" id="longestStreak">Longest: 0 days</div>
+              <div class="streak-label">day streak</div>
+              <div class="streak-sub" id="streakSub">Start a session today.</div>
+              <div class="streak-sub" id="longestStreak">Longest: 0 days</div>
             </div>
           </div>
-          <div class="week-grid mt-16" id="weekGrid"></div>
-        </div>
+          <div class="week-grid" id="weekGrid"></div>
+        </section>
+        <section class="card" aria-labelledby="gardenTitle">
+          <div class="card-header">
+            <h2 class="card-title" id="gardenTitle">Focus garden</h2>
+            <span class="badge badge-green" id="gardenCount">0 trees</span>
+          </div>
+          <div class="garden-scroll"><div class="garden-grid" id="gardenGrid"></div></div>
+          <p class="card-caption">One tree per completed session. Withered trees are sessions you skipped.</p>
+        </section>
       </div>
 
-      <div class="card mb-16">
+      <section class="card mb-16" aria-labelledby="heatTitle">
         <div class="card-header">
-          <h3>📅 Activity Heatmap</h3>
-          <span class="text-xs">Last 52 weeks</span>
+          <h2 class="card-title" id="heatTitle">Activity</h2>
+          <span class="text-xs">Last 12 months</span>
         </div>
-        <div class="heatmap-months" id="heatmapMonths"></div>
+        <div class="heatmap-months" id="heatmapMonths" aria-hidden="true"></div>
         <div class="heatmap-grid" id="heatmapGrid"></div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:10px;justify-content:flex-end">
-          <span class="text-xs">Less</span>
-          <div style="width:12px;height:12px;border-radius:2px;background:var(--surface)"></div>
-          <div style="width:12px;height:12px;border-radius:2px" class="heatmap-1"></div>
-          <div style="width:12px;height:12px;border-radius:2px" class="heatmap-2"></div>
-          <div style="width:12px;height:12px;border-radius:2px" class="heatmap-3"></div>
-          <div style="width:12px;height:12px;border-radius:2px" class="heatmap-4"></div>
-          <div style="width:12px;height:12px;border-radius:2px" class="heatmap-5"></div>
-          <span class="text-xs">More</span>
+        <div class="heatmap-legend" aria-hidden="true">
+          <span>Less</span>
+          <span class="heatmap-cell heatmap-0"></span><span class="heatmap-cell heatmap-1"></span><span class="heatmap-cell heatmap-2"></span>
+          <span class="heatmap-cell heatmap-3"></span><span class="heatmap-cell heatmap-4"></span><span class="heatmap-cell heatmap-5"></span>
+          <span>More</span>
         </div>
-      </div>
+      </section>
 
       <div class="grid-2 mb-16">
-        <div class="card">
-          <div class="card-header"><h3>📊 Daily Focus (This Week)</h3></div>
+        <section class="card" aria-labelledby="weekTitle">
+          <div class="card-header"><h2 class="card-title" id="weekTitle">This week</h2></div>
           <div class="bar-chart" id="weekBarChart"></div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <h3>🎯 Focus Score</h3>
-          </div>
+        </section>
+        <section class="card" aria-labelledby="scoreTitle">
+          <div class="card-header"><h2 class="card-title" id="scoreTitle">Focus score</h2></div>
           <div class="focus-score-ring">
-            <svg viewBox="0 0 120 120">
+            <svg aria-hidden="true" focusable="false" viewBox="0 0 120 120">
               <circle fill="none" stroke="var(--surface2)" stroke-width="10" cx="60" cy="60" r="50"/>
-              <circle fill="none" stroke="var(--accent)" stroke-width="10" cx="60" cy="60" r="50"
-                stroke-dasharray="314" id="focusScoreRing" stroke-dashoffset="314" stroke-linecap="round"/>
+              <circle fill="none" stroke="var(--accent)" stroke-width="10" cx="60" cy="60" r="50" stroke-dasharray="314" id="focusScoreRing" stroke-dashoffset="314" stroke-linecap="round"/>
             </svg>
             <div class="focus-score-center">
               <div class="focus-score-num" id="focusScoreNum">0</div>
-              <div class="focus-score-label">/ 100</div>
+              <div class="focus-score-label">of 100</div>
             </div>
           </div>
-          <div id="focusScoreBreakdown" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
-        </div>
+          <div id="focusScoreBreakdown" class="flex-col"></div>
+        </section>
       </div>
 
-      <div class="card mb-16">
-        <div class="card-header"><h3>🏆 Achievements</h3></div>
+      <section class="card mb-16" aria-labelledby="achTitle">
+        <div class="card-header"><h2 class="card-title" id="achTitle">Achievements</h2></div>
         <div class="achievements-grid" id="achievementsGrid"></div>
-      </div>
+      </section>
 
-      <div class="card">
-        <div class="card-header">
-          <h3>📋 Productivity Report</h3>
-          <button class="btn btn-ghost" onclick="exportReport()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Export
-          </button>
-        </div>
+      <section class="card" aria-labelledby="reportTitle">
+        <div class="card-header"><h2 class="card-title" id="reportTitle">All time</h2></div>
         <div id="productivityReport"></div>
-      </div>
-    </div>
+      </section>
+    </section>
 
-    <!-- ===================== SETTINGS ===================== -->
-    <div class="page" id="page-settings">
-      <div class="page-title">Settings</div>
-      <div class="page-subtitle">Customize your experience</div>
+    <!-- SETTINGS ========================================================= -->
+    <section class="page" id="page-settings" aria-labelledby="settingsTitle">
+      <header class="page-head">
+        <div>
+          <h1 class="page-title" id="settingsTitle" tabindex="-1">Settings</h1>
+          <p class="page-subtitle">Appearance, sounds and your data.</p>
+        </div>
+      </header>
       <div class="settings-sections">
-        <div class="settings-section">
-          <div class="settings-section-title">Appearance</div>
+        <section class="settings-section" aria-labelledby="setAppearance">
+          <h2 class="settings-section-title" id="setAppearance">Appearance</h2>
           <div class="settings-row">
-            <div><div class="settings-row-label">Accent Color</div><div class="settings-row-sub">Choose your theme color</div></div>
-            <div class="color-options" id="colorOptions">
-              <div class="color-opt selected" style="background:#7c6af7" onclick="setAccent('#7c6af7','#a594ff',this)" data-c="#7c6af7"></div>
-              <div class="color-opt" style="background:#4ade80" onclick="setAccent('#4ade80','#86efac',this)" data-c="#4ade80"></div>
-              <div class="color-opt" style="background:#f87171" onclick="setAccent('#f87171','#fca5a5',this)" data-c="#f87171"></div>
-              <div class="color-opt" style="background:#22d3ee" onclick="setAccent('#22d3ee','#67e8f9',this)" data-c="#22d3ee"></div>
-              <div class="color-opt" style="background:#fbbf24" onclick="setAccent('#fbbf24','#fcd34d',this)" data-c="#fbbf24"></div>
-              <div class="color-opt" style="background:#f472b6" onclick="setAccent('#f472b6','#f9a8d4',this)" data-c="#f472b6"></div>
-            </div>
-          </div>
-          <div class="settings-row">
-            <div><div class="settings-row-label">Theme Mode</div><div class="settings-row-sub">Switch between dark and light UI</div></div>
-            <select class="input" id="themeModeSelect" style="width:160px" onchange="setThemeMode(this.value)">
+            <div><div class="settings-row-label" id="lblTheme">Theme</div><div class="settings-row-sub">Liquid Glass uses frosted, translucent panels.</div></div>
+            <select class="input" id="themeModeSelect" onchange="setThemeMode(this.value)" aria-labelledby="lblTheme">
+              <option value="system">Match system</option>
               <option value="dark">Dark</option>
               <option value="light">Light</option>
+              <option value="glass">Liquid Glass</option>
             </select>
           </div>
           <div class="settings-row">
-            <div><div class="settings-row-label">Background</div><div class="settings-row-sub">Panel background style</div></div>
-            <select class="input" id="bgStyleSelect" style="width:160px" onchange="setBgStyle(this.value)">
-              <option value="dark">Pure Dark</option>
-              <option value="darker">Even Darker</option>
+            <div><div class="settings-row-label">Accent colour</div><div class="settings-row-sub">Used for buttons, progress and highlights.</div></div>
+            <div class="color-options" id="colorOptions" role="group" aria-label="Accent colour">
+              <button type="button" class="color-opt selected" style="background:#7c6af7" onclick="setAccent('#7c6af7','#a594ff',this)" data-c="#7c6af7" aria-label="Violet" aria-pressed="true"></button>
+              <button type="button" class="color-opt" style="background:#4ade80" onclick="setAccent('#4ade80','#86efac',this)" data-c="#4ade80" aria-label="Green" aria-pressed="false"></button>
+              <button type="button" class="color-opt" style="background:#f87171" onclick="setAccent('#f87171','#fca5a5',this)" data-c="#f87171" aria-label="Red" aria-pressed="false"></button>
+              <button type="button" class="color-opt" style="background:#22d3ee" onclick="setAccent('#22d3ee','#67e8f9',this)" data-c="#22d3ee" aria-label="Cyan" aria-pressed="false"></button>
+              <button type="button" class="color-opt" style="background:#fbbf24" onclick="setAccent('#fbbf24','#fcd34d',this)" data-c="#fbbf24" aria-label="Amber" aria-pressed="false"></button>
+              <button type="button" class="color-opt" style="background:#f472b6" onclick="setAccent('#f472b6','#f9a8d4',this)" data-c="#f472b6" aria-label="Pink" aria-pressed="false"></button>
+            </div>
+          </div>
+          <div class="settings-row" id="bgStyleRow">
+            <div><div class="settings-row-label" id="lblBg">Dark background</div><div class="settings-row-sub">For the Dark theme only.</div></div>
+            <select class="input" id="bgStyleSelect" aria-labelledby="lblBg" onchange="setBgStyle(this.value)">
+              <option value="dark">Standard</option>
+              <option value="darker">Deeper black</option>
             </select>
           </div>
-        </div>
-        <div class="settings-section">
-          <div class="settings-section-title">Notifications</div>
+        </section>
+
+        <section class="settings-section" aria-labelledby="setSounds">
+          <h2 class="settings-section-title" id="setSounds">Sounds and notifications</h2>
           <div class="settings-row">
-            <div><div class="settings-row-label">Browser Notifications</div><div class="settings-row-sub">Show alerts when timers end</div></div>
-            <button class="btn btn-ghost" onclick="requestNotifications()">Request Permission</button>
+            <div><div class="settings-row-label" id="lblSoundToggle">Alert sound</div><div class="settings-row-sub">Play a sound when a session or timer ends.</div></div>
+            <label class="toggle"><input type="checkbox" id="soundToggle" aria-labelledby="lblSoundToggle" checked onchange="saveSettings()"><span class="toggle-slider"></span></label>
           </div>
           <div class="settings-row">
-            <div><div class="settings-row-label">Notification Sound</div><div class="settings-row-sub">Play sound on timer complete</div></div>
-            <select class="input" id="soundSelect" style="width:160px" onchange="saveSettings('soundSelect')">
+            <div><div class="settings-row-label" id="lblSound">Sound</div><div class="settings-row-sub">Plays a preview when changed.</div></div>
+            <select class="input" id="soundSelect" aria-labelledby="lblSound" onchange="saveSettings('soundSelect')">
               <option value="bell">Bell</option>
               <option value="chime">Chime</option>
               <option value="ding">Ding</option>
@@ -1273,73 +568,104 @@ body.theme-light .home-metric{background:rgba(255,255,255,0.76);border-color:var
             </select>
           </div>
           <div class="settings-row">
-            <div><div class="settings-row-label">Volume</div></div>
-            <input type="range" min="0" max="100" value="70" id="volumeSlider" style="width:120px" oninput="saveSettings('volumeSlider')">
-          </div>
-        </div>
-        <div class="settings-section">
-          <div class="settings-section-title">Data</div>
-          <div class="settings-row">
-            <div><div class="settings-row-label">Export Data</div><div class="settings-row-sub">Download all your data as JSON</div></div>
-            <button class="btn btn-ghost" onclick="exportData()">Export JSON</button>
+            <div><div class="settings-row-label" id="lblVolume">Volume</div><div class="settings-row-sub">Alerts and ambient sounds.</div></div>
+            <input type="range" min="0" max="100" value="70" id="volumeSlider" aria-labelledby="lblVolume" oninput="saveSettings('volumeSlider')">
           </div>
           <div class="settings-row">
-            <div><div class="settings-row-label">Import Data</div><div class="settings-row-sub">Merge a backup into your data</div></div>
-            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
-            <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">Import JSON</button>
+            <div><div class="settings-row-label">Browser notifications</div><div class="settings-row-sub">Get notified when a session ends in another tab.</div></div>
+            <div class="settings-control">
+              <span class="status-pill" id="notifStatus">Off</span>
+              <button type="button" class="btn btn-ghost" id="notifBtn" onclick="requestNotifications()">Turn on</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section" aria-labelledby="setCalendar">
+          <h2 class="settings-section-title" id="setCalendar">Calendar and reminders</h2>
+          <div class="settings-row">
+            <div><div class="settings-row-label" id="lblWeekStart">Week starts on</div></div>
+            <select class="input" id="weekStartSelect" aria-labelledby="lblWeekStart" onchange="ZenCalendarUI.setWeekStart(this.value)">
+              <option value="1">Monday</option>
+              <option value="0">Sunday</option>
+            </select>
           </div>
           <div class="settings-row">
-            <div><div class="settings-row-label">Reset All Data</div><div class="settings-row-sub text-red">Deletes data on this device (and in the cloud when logged in)</div></div>
-            <button class="btn btn-danger" onclick="confirmReset()">Reset</button>
+            <div><div class="settings-row-label">Reminders when ZenFlow is closed</div><div class="settings-row-sub">Push notifications to this device, even with the app closed. Requires an account.</div></div>
+            <div class="settings-control">
+              <span class="status-pill" id="pushStatus">Off</span>
+              <button type="button" class="btn btn-ghost" id="pushBtn" data-action="cal-push-on">Turn on</button>
+            </div>
           </div>
-        </div>
-        <div class="settings-section">
-          <div class="settings-section-title">Ambient Sounds</div>
+          <div class="settings-row">
+            <div><div class="settings-row-label">Google Calendar</div><div class="settings-row-sub">Connect and choose calendars on the Calendar page.</div></div>
+            <button type="button" class="btn btn-ghost" onclick="navigate('calendar')">Open calendar</button>
+          </div>
+        </section>
+
+        <section class="settings-section" aria-labelledby="setAmbient">
+          <h2 class="settings-section-title" id="setAmbient">Ambient sounds</h2>
           <div id="ambientSoundsList"></div>
-        </div>
-        <div class="settings-section">
-          <div class="settings-section-title">About</div>
+        </section>
+
+        <section class="settings-section" aria-labelledby="setData">
+          <h2 class="settings-section-title" id="setData">Your data</h2>
           <div class="settings-row">
-            <div><div class="settings-row-label">ZenFlow</div><div class="settings-row-sub">Focus & Productivity Suite v2.0</div></div>
-            <span class="badge badge-accent">v2.0.0</span>
+            <div><div class="settings-row-label">Export backup</div><div class="settings-row-sub">Download everything as a JSON file.</div></div>
+            <button type="button" class="btn btn-ghost" onclick="exportData()">Export</button>
           </div>
-        </div>
+          <div class="settings-row">
+            <div><div class="settings-row-label">Import backup</div><div class="settings-row-sub">Merges into your current data; nothing is removed.</div></div>
+            <input type="file" id="importFile" hidden accept=".json,application/json" onchange="importData(event)">
+            <button type="button" class="btn btn-ghost" id="importBtn" onclick="document.getElementById('importFile').click()">Import…</button>
+          </div>
+          <div class="settings-row">
+            <div><div class="settings-row-label">Delete all data</div><div class="settings-row-sub text-red">Removes everything on this device, and in the cloud if you're logged in.</div></div>
+            <button type="button" class="btn btn-danger" onclick="confirmReset()">Delete…</button>
+          </div>
+        </section>
+
+        <section class="settings-section" aria-labelledby="setAbout">
+          <h2 class="settings-section-title" id="setAbout">About</h2>
+          <div class="settings-row">
+            <div><div class="settings-row-label">ZenFlow</div><div class="settings-row-sub">Your data stays in this browser. Log in to sync it across devices.</div></div>
+            <span class="badge badge-accent">v2.1</span>
+          </div>
+        </section>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 </div>
 
 <!-- MODALS -->
-<div class="modal-overlay" id="modalAuth">
-  <div class="modal" style="max-width:420px">
+<dialog class="modal" id="modalAuth" closedby="any" aria-labelledby="modalAuthTitle" style="max-width:420px">
     <div class="modal-header">
-      <div class="modal-title">ZenFlow Account</div>
-      <button class="modal-close" onclick="closeModal('modalAuth')">✕</button>
+      <h2 class="modal-title" id="modalAuthTitle">Account and sync</h2>
+      <button type="button" class="modal-close" onclick="closeModal('modalAuth')" aria-label="Close">✕</button>
     </div>
 
     <div id="authLoggedOutView">
-      <div class="auth-helper">Login is optional. Sign in to sync your ZenFlow data across devices.</div>
+      <div class="auth-helper">Optional. Log in to keep your data in sync across devices.</div>
       <div class="auth-mode-switch">
-        <button class="auth-mode-btn active" id="authModeLoginBtn" onclick="setAuthMode('login')">Log In</button>
-        <button class="auth-mode-btn" id="authModeSignupBtn" onclick="setAuthMode('signup')">Sign Up</button>
+        <button type="button" class="auth-mode-btn active" id="authModeLoginBtn" onclick="setAuthMode('login')">Log In</button>
+        <button type="button" class="auth-mode-btn" id="authModeSignupBtn" onclick="setAuthMode('signup')">Sign Up</button>
       </div>
       <div class="form-group" id="authNicknameGroup" style="display:none">
-        <label class="form-label">Nickname</label>
+        <label class="form-label" for="authNicknameInput">Nickname</label>
         <input class="input" id="authNicknameInput" type="text" maxlength="24" placeholder="How should we call you?" autocomplete="nickname">
       </div>
       <div class="form-group">
-        <label class="form-label">Email</label>
+        <label class="form-label" for="authEmailInput">Email</label>
         <input class="input" id="authEmailInput" type="email" placeholder="you@example.com" autocomplete="email">
       </div>
       <div class="form-group">
-        <label class="form-label">Password</label>
-        <input class="input" id="authPasswordInput" type="password" placeholder="Minimum 6 characters" autocomplete="current-password">
+        <label class="form-label" for="authPasswordInput">Password</label>
+        <input class="input" id="authPasswordInput" type="password" placeholder="At least 6 characters" autocomplete="current-password">
       </div>
       <div class="auth-form-note" id="authModeNote">Use your account email and password to log in.</div>
       <div class="auth-status" id="authStatusMessage">Use your email and password to continue.</div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
-        <button class="btn btn-ghost" id="authForgotBtn" onclick="handleForgotPassword()">Forgot password?</button>
-        <button class="btn btn-primary" id="authPrimaryBtn" onclick="handleAuthPrimary()">Log In</button>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="authForgotBtn" onclick="handleForgotPassword()">Forgot password?</button>
+        <button type="button" class="btn btn-primary" id="authPrimaryBtn" onclick="handleAuthPrimary()">Log In</button>
       </div>
     </div>
 
@@ -1350,187 +676,293 @@ body.theme-light .home-metric{background:rgba(255,255,255,0.76);border-color:var
         <div class="text-xs" id="authUserEmail" style="margin-top:4px;word-break:break-word"></div>
       </div>
       <div class="auth-status" id="authSyncInfo">Cloud sync is active for this account.</div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
-        <button class="btn btn-ghost" onclick="syncCloudNow()">Sync Now</button>
-        <button class="btn btn-danger" onclick="handleAuthLogout()">Log Out</button>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="syncCloudNow(this)">Sync now</button>
+        <button type="button" class="btn btn-danger" onclick="handleAuthLogout(this)">Log out</button>
       </div>
     </div>
-  </div>
-</div>
+</dialog>
 
-<div class="modal-overlay" id="modalAddTask">
-  <div class="modal">
+<dialog class="modal" id="modalAddTask" closedby="any" aria-labelledby="taskModalTitle">
     <div class="modal-header">
-      <div class="modal-title" id="taskModalTitle">Add Task</div>
-      <button class="modal-close" onclick="closeModal('modalAddTask')">✕</button>
+      <h2 class="modal-title" id="taskModalTitle">New task</h2>
+      <button type="button" class="modal-close" onclick="closeModal('modalAddTask')" aria-label="Close">✕</button>
     </div>
     <div class="form-group">
-      <label class="form-label">Task Name</label>
-      <input class="input" id="taskNameInput" placeholder="What needs to be done?" maxlength="200">
+      <label class="form-label" for="taskNameInput">Task name <span class="req" aria-hidden="true">*</span></label>
+      <input class="input" id="taskNameInput" placeholder="What needs to be done?" maxlength="200" required>
     </div>
     <div class="form-group">
-      <label class="form-label">Notes</label>
+      <label class="form-label" for="taskNoteInput">Notes</label>
       <textarea class="input" id="taskNoteInput" rows="2" placeholder="Add any details..." style="resize:vertical"></textarea>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Due Date</label>
+        <label class="form-label" for="taskDueInput">Due date</label>
         <input class="input" id="taskDueInput" type="date">
       </div>
       <div class="form-group">
-        <label class="form-label">List</label>
+        <label class="form-label" for="taskListInput">List</label>
         <select class="input" id="taskListInput"></select>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Priority</label>
-      <div class="priority-select">
-        <button class="prio-btn high" onclick="selectPriority('high',this)">🔴 High</button>
-        <button class="prio-btn medium" onclick="selectPriority('medium',this)">🟠 Medium</button>
-        <button class="prio-btn low" onclick="selectPriority('low',this)">🟢 Low</button>
-        <button class="prio-btn none active" onclick="selectPriority('none',this)">⚪ None</button>
+      <span class="form-label" id="prioLabel">Priority</span>
+      <div class="priority-select" role="group" aria-labelledby="prioLabel">
+        <button type="button" class="prio-btn high" onclick="selectPriority('high',this)">🔴 High</button>
+        <button type="button" class="prio-btn medium" onclick="selectPriority('medium',this)">🟠 Medium</button>
+        <button type="button" class="prio-btn low" onclick="selectPriority('low',this)">🟢 Low</button>
+        <button type="button" class="prio-btn none active" onclick="selectPriority('none',this)">⚪ None</button>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Tags</label>
+      <label class="form-label" for="tagInputField">Tags</label>
       <div class="tag-input" id="tagInputArea" onclick="document.getElementById('tagInputField').focus()">
         <input class="tag-input-field" id="tagInputField" placeholder="Add tags..." onkeydown="handleTagInput(event)">
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">Estimated Pomodoros</label>
+      <span class="form-label" id="estLabel">Estimated sessions</span>
       <div class="number-input">
-        <button class="num-btn" onclick="adjustEstPomos(-1)">−</button>
+        <button type="button" class="num-btn" onclick="adjustEstPomos(-1)" aria-label="Fewer estimated pomodoros">−</button>
         <span class="num-val" id="estPomos">1</span>
-        <button class="num-btn" onclick="adjustEstPomos(1)">+</button>
+        <button type="button" class="num-btn" onclick="adjustEstPomos(1)" aria-label="More estimated pomodoros">+</button>
         <span class="text-xs">🍅</span>
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
-      <button class="btn btn-ghost" onclick="closeModal('modalAddTask')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveTask()">Save Task</button>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modalAddTask')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="saveTask()">Save task</button>
     </div>
-  </div>
-</div>
+</dialog>
 
-<div class="modal-overlay" id="modalNewList">
-  <div class="modal" style="max-width:360px">
+<dialog class="modal" id="modalNewList" closedby="any" aria-labelledby="modalNewListTitle" style="max-width:360px">
     <div class="modal-header">
-      <div class="modal-title">New List</div>
-      <button class="modal-close" onclick="closeModal('modalNewList')">✕</button>
+      <h2 class="modal-title" id="modalNewListTitle">New list</h2>
+      <button type="button" class="modal-close" onclick="closeModal('modalNewList')" aria-label="Close">✕</button>
     </div>
     <div class="form-group">
-      <label class="form-label">List Name</label>
-      <input class="input" id="newListName" placeholder="My List" maxlength="40">
+      <label class="form-label" for="newListName">List name <span class="req" aria-hidden="true">*</span></label>
+      <input class="input" id="newListName" placeholder="e.g. Side project" maxlength="40" required>
     </div>
     <div class="form-group">
-      <label class="form-label">Color</label>
-      <div class="color-options">
-        <div class="color-opt selected" style="background:#7c6af7" onclick="selectListColor('#7c6af7',this)"></div>
-        <div class="color-opt" style="background:#4ade80" onclick="selectListColor('#4ade80',this)"></div>
-        <div class="color-opt" style="background:#f87171" onclick="selectListColor('#f87171',this)"></div>
-        <div class="color-opt" style="background:#22d3ee" onclick="selectListColor('#22d3ee',this)"></div>
-        <div class="color-opt" style="background:#fbbf24" onclick="selectListColor('#fbbf24',this)"></div>
-        <div class="color-opt" style="background:#f472b6" onclick="selectListColor('#f472b6',this)"></div>
+      <span class="form-label" id="listColorLabel">Color</span>
+      <div class="color-options" role="group" aria-labelledby="listColorLabel">
+        <button type="button" class="color-opt selected" style="background:#7c6af7" onclick="selectListColor('#7c6af7',this)" aria-label="Violet" aria-pressed="true"></button>
+        <button type="button" class="color-opt" style="background:#4ade80" onclick="selectListColor('#4ade80',this)" aria-label="Green" aria-pressed="false"></button>
+        <button type="button" class="color-opt" style="background:#f87171" onclick="selectListColor('#f87171',this)" aria-label="Red" aria-pressed="false"></button>
+        <button type="button" class="color-opt" style="background:#22d3ee" onclick="selectListColor('#22d3ee',this)" aria-label="Cyan" aria-pressed="false"></button>
+        <button type="button" class="color-opt" style="background:#fbbf24" onclick="selectListColor('#fbbf24',this)" aria-label="Amber" aria-pressed="false"></button>
+        <button type="button" class="color-opt" style="background:#f472b6" onclick="selectListColor('#f472b6',this)" aria-label="Pink" aria-pressed="false"></button>
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn btn-ghost" onclick="closeModal('modalNewList')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveNewList()">Create</button>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modalNewList')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="saveNewList()">Create</button>
     </div>
-  </div>
-</div>
+</dialog>
 
-<div class="modal-overlay" id="modalAddPreset">
-  <div class="modal" style="max-width:360px">
+<dialog class="modal" id="modalAddPreset" closedby="any" aria-labelledby="modalAddPresetTitle" style="max-width:360px">
     <div class="modal-header">
-      <div class="modal-title">Add Timer Preset</div>
-      <button class="modal-close" onclick="closeModal('modalAddPreset')">✕</button>
+      <h2 class="modal-title" id="modalAddPresetTitle">New preset</h2>
+      <button type="button" class="modal-close" onclick="closeModal('modalAddPreset')" aria-label="Close">✕</button>
     </div>
     <div class="form-group">
-      <label class="form-label">Name</label>
-      <input class="input" id="presetName" placeholder="e.g. Deep Work" maxlength="40">
+      <label class="form-label" for="presetName">Name <span class="req" aria-hidden="true">*</span></label>
+      <input class="input" id="presetName" placeholder="e.g. Deep work" maxlength="40" required>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Hours</label>
+        <label class="form-label" for="presetH">Hours</label>
         <input class="input" id="presetH" type="number" min="0" max="23" value="0">
       </div>
       <div class="form-group">
-        <label class="form-label">Minutes</label>
+        <label class="form-label" for="presetM">Minutes</label>
         <input class="input" id="presetM" type="number" min="0" max="59" value="25">
       </div>
       <div class="form-group">
-        <label class="form-label">Seconds</label>
+        <label class="form-label" for="presetS">Seconds</label>
         <input class="input" id="presetS" type="number" min="0" max="59" value="0">
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn btn-ghost" onclick="closeModal('modalAddPreset')">Cancel</button>
-      <button class="btn btn-primary" onclick="savePreset()">Save</button>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modalAddPreset')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="savePreset()">Save</button>
     </div>
-  </div>
-</div>
+</dialog>
 
-<div class="modal-overlay" id="modalAddProject">
-  <div class="modal" style="max-width:360px">
+<dialog class="modal" id="modalAddProject" closedby="any" aria-labelledby="modalAddProjectTitle" style="max-width:360px">
     <div class="modal-header">
-      <div class="modal-title">New Project</div>
-      <button class="modal-close" onclick="closeModal('modalAddProject')">✕</button>
+      <h2 class="modal-title" id="modalAddProjectTitle">New project</h2>
+      <button type="button" class="modal-close" onclick="closeModal('modalAddProject')" aria-label="Close">✕</button>
     </div>
     <div class="form-group">
-      <label class="form-label">Project Name</label>
-      <input class="input" id="projectName" placeholder="My Project" maxlength="40">
+      <label class="form-label" for="projectName">Project name <span class="req" aria-hidden="true">*</span></label>
+      <input class="input" id="projectName" placeholder="e.g. Client website" maxlength="40" required>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn btn-ghost" onclick="closeModal('modalAddProject')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveProject()">Create</button>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modalAddProject')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="saveProject()">Create</button>
     </div>
-  </div>
-</div>
+</dialog>
 
-<div class="modal-overlay" id="modalManualEntry">
-  <div class="modal">
+<dialog class="modal" id="modalManualEntry" closedby="any" aria-labelledby="modalManualEntryTitle">
     <div class="modal-header">
-      <div class="modal-title">Add Manual Entry</div>
-      <button class="modal-close" onclick="closeModal('modalManualEntry')">✕</button>
+      <h2 class="modal-title" id="modalManualEntryTitle">Add time entry</h2>
+      <button type="button" class="modal-close" onclick="closeModal('modalManualEntry')" aria-label="Close">✕</button>
     </div>
     <div class="form-group">
-      <label class="form-label">Description</label>
+      <label class="form-label" for="manualDesc">Description</label>
       <input class="input" id="manualDesc" placeholder="What did you work on?">
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Start Time</label>
+        <label class="form-label" for="manualStart">Start</label>
         <input class="input" id="manualStart" type="time">
       </div>
       <div class="form-group">
-        <label class="form-label">End Time</label>
+        <label class="form-label" for="manualEnd">End</label>
         <input class="input" id="manualEnd" type="time">
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Date</label>
+        <label class="form-label" for="manualDate">Date</label>
         <input class="input" id="manualDate" type="date">
       </div>
       <div class="form-group">
-        <label class="form-label">Project</label>
+        <label class="form-label" for="manualProject">Project</label>
         <select class="input" id="manualProject"></select>
       </div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn btn-ghost" onclick="closeModal('modalManualEntry')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveManualEntry()">Save</button>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modalManualEntry')">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="saveManualEntry()">Save</button>
+    </div>
+</dialog>
+
+<dialog class="modal modal-wide" id="modalEvent" closedby="any" aria-labelledby="eventModalTitle">
+  <div class="modal-header">
+    <h2 class="modal-title" id="eventModalTitle">New event</h2>
+    <button type="button" class="modal-close" onclick="closeModal('modalEvent')" aria-label="Close">✕</button>
+  </div>
+  <p class="form-hint mb-8" id="evReadOnlyNote" hidden>This event can only be changed in Google Calendar.</p>
+  <div class="pomo-tabs ev-kind mb-16" role="group" aria-label="Type">
+    <button type="button" class="pomo-tab active" data-kind="event" aria-pressed="true" onclick="ZenCalendarUI.setKind('event')">Event</button>
+    <button type="button" class="pomo-tab" data-kind="reminder" aria-pressed="false" onclick="ZenCalendarUI.setKind('reminder')">Reminder</button>
+    <button type="button" class="pomo-tab" data-kind="alarm" aria-pressed="false" onclick="ZenCalendarUI.setKind('alarm')">Alarm</button>
+  </div>
+  <div class="form-group">
+    <label class="form-label" for="evTitle">Title <span class="req" aria-hidden="true">*</span></label>
+    <input class="input" id="evTitle" maxlength="200" required placeholder="What’s happening?">
+  </div>
+  <div class="setting-row mb-16" id="evAllDayRow">
+    <span class="setting-label" id="lblAllDay">All day</span>
+    <label class="toggle"><input type="checkbox" id="evAllDay" aria-labelledby="lblAllDay" onchange="ZenCalendarUI.onAllDay()"><span class="toggle-slider"></span></label>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label" for="evStartDate" id="evStartLabel">Starts</label><input class="input" type="date" id="evStartDate"></div>
+    <div class="form-group"><label class="form-label" for="evStartTime">Time</label><input class="input" type="time" id="evStartTime"></div>
+  </div>
+  <div class="form-row" id="evEndRow">
+    <div class="form-group"><label class="form-label" for="evEndDate">Ends</label><input class="input" type="date" id="evEndDate"></div>
+    <div class="form-group"><label class="form-label" for="evEndTime">Time</label><input class="input" type="time" id="evEndTime"></div>
+  </div>
+  <p class="form-hint mb-8" id="evTzNote"></p>
+  <div class="form-group">
+    <label class="form-label" for="evRepeat">Repeat</label>
+    <select class="input" id="evRepeat">
+      <option value="none">Does not repeat</option>
+      <option value="daily">Daily</option>
+      <option value="weekdays">Every weekday (Mon–Fri)</option>
+      <option value="weekly">Weekly on…</option>
+      <option value="monthly-day">Monthly</option>
+      <option value="monthly-nth">Monthly</option>
+      <option value="yearly">Yearly</option>
+      <option value="custom" hidden>Custom</option>
+    </select>
+  </div>
+  <div id="evRepeatMore" class="ev-repeat" hidden>
+    <div class="flex-row" id="evIntervalRow"><label class="form-label" for="evInterval" style="margin:0">Every</label><input class="input" type="number" id="evInterval" min="1" max="99" style="width:80px"><span class="text-sm" id="evIntervalUnit"></span></div>
+    <div class="filter-chips" id="evWeekdays" role="group" aria-label="Repeat on">
+      <button type="button" class="chip ev-dow" data-wd="1" aria-pressed="false">Mon</button>
+      <button type="button" class="chip ev-dow" data-wd="2" aria-pressed="false">Tue</button>
+      <button type="button" class="chip ev-dow" data-wd="3" aria-pressed="false">Wed</button>
+      <button type="button" class="chip ev-dow" data-wd="4" aria-pressed="false">Thu</button>
+      <button type="button" class="chip ev-dow" data-wd="5" aria-pressed="false">Fri</button>
+      <button type="button" class="chip ev-dow" data-wd="6" aria-pressed="false">Sat</button>
+      <button type="button" class="chip ev-dow" data-wd="0" aria-pressed="false">Sun</button>
+    </div>
+    <div class="flex-row">
+      <label class="form-label" for="evEnds" style="margin:0">Ends</label>
+      <select class="input" id="evEnds" style="width:auto"><option value="never">Never</option><option value="on">On date</option><option value="after">After</option></select>
+      <input class="input" type="date" id="evUntil" aria-label="End date" style="width:auto" hidden>
+      <input class="input" type="number" id="evCount" min="1" max="999" aria-label="Number of times" style="width:90px" hidden>
     </div>
   </div>
-</div>
+  <div class="form-group" id="evRemindersGroup">
+    <span class="form-label" id="lblReminders">Reminders</span>
+    <div id="evReminders" class="flex-col" role="group" aria-labelledby="lblReminders"></div>
+    <button type="button" class="btn btn-link" data-action="ev-add-reminder">+ Add reminder</button>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label class="form-label" for="evCal">Calendar</label><select class="input" id="evCal"></select></div>
+    <div class="form-group" id="evLocGroup"><label class="form-label" for="evLocation">Location</label><input class="input" id="evLocation" maxlength="300"></div>
+  </div>
+  <div class="form-group" id="evDescGroup"><label class="form-label" for="evDesc">Notes</label><textarea class="input" id="evDesc" rows="3" maxlength="4000"></textarea></div>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-danger" id="evDelete" onclick="ZenCalendarUI.removeFromDialog()" hidden>Delete</button>
+    <button type="button" class="btn btn-ghost" id="evDone" onclick="ZenCalendarUI.toggleDone()" hidden>Mark done</button>
+    <span class="spacer"></span>
+    <button type="button" class="btn btn-ghost" onclick="closeModal('modalEvent')">Cancel</button>
+    <button type="button" class="btn btn-primary" id="evSave" onclick="ZenCalendarUI.save()">Save</button>
+  </div>
+</dialog>
+
+<dialog class="modal" id="modalChoice" aria-labelledby="choiceTitle" aria-describedby="choiceMessage" style="max-width:440px">
+  <div class="modal-header"><h2 class="modal-title" id="choiceTitle"></h2></div>
+  <p class="confirm-message" id="choiceMessage"></p>
+  <div class="modal-actions" id="choiceActions"></div>
+</dialog>
+
+<dialog class="modal alarm-dialog" id="modalAlarm" aria-labelledby="alarmTitle" aria-describedby="alarmBody">
+  <div class="alarm-icon" aria-hidden="true">⏰</div>
+  <p class="alarm-time" id="alarmTime"></p>
+  <h2 class="modal-title" id="alarmTitle"></h2>
+  <p class="confirm-message" id="alarmBody"></p>
+  <div class="modal-actions alarm-actions">
+    <button type="button" class="btn btn-ghost" data-alarm="snooze5">Snooze 5 min</button>
+    <button type="button" class="btn btn-ghost" data-alarm="snooze10">Snooze 10 min</button>
+    <button type="button" class="btn btn-ghost" id="alarmDone" data-alarm="done" hidden>Mark done</button>
+    <button type="button" class="btn btn-primary" id="alarmDismiss" data-alarm="dismiss">Dismiss</button>
+  </div>
+</dialog>
+
+<dialog class="modal sheet" id="modalMore" closedby="any" aria-label="More pages">
+  <nav class="more-list" aria-label="More pages">
+    <button type="button" class="more-item" data-page="timer" onclick="closeModal('modalMore');navigate('timer')">Timer</button>
+    <button type="button" class="more-item" data-page="stopwatch" onclick="closeModal('modalMore');navigate('stopwatch')">Stopwatch</button>
+    <button type="button" class="more-item" data-page="forest" onclick="closeModal('modalMore');navigate('forest')">Stats</button>
+    <button type="button" class="more-item" data-page="settings" onclick="closeModal('modalMore');navigate('settings')">Settings</button>
+  </nav>
+</dialog>
+
+<dialog class="modal" id="modalConfirm" aria-labelledby="confirmTitle" aria-describedby="confirmMessage" style="max-width:420px">
+  <div class="modal-header">
+    <h2 class="modal-title" id="confirmTitle">Are you sure?</h2>
+  </div>
+  <p class="confirm-message" id="confirmMessage"></p>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-ghost" id="confirmCancel">Cancel</button>
+    <button type="button" class="btn btn-primary" id="confirmOk">Confirm</button>
+  </div>
+</dialog>
 
 <!-- FOCUS MODE OVERLAY -->
-<div class="focus-mode" id="focusModeOverlay">
-  <button class="btn btn-ghost focus-mode-exit" onclick="closeFocusMode()">✕ Exit Focus Mode</button>
+<div class="focus-mode" id="focusModeOverlay" role="dialog" aria-modal="true" aria-label="Focus mode">
+  <button type="button" class="btn btn-ghost focus-mode-exit" onclick="closeFocusMode()">Exit focus mode</button>
   <div class="ring-container" style="width:320px;height:320px">
-    <svg class="ring-svg" viewBox="0 0 320 320">
+    <svg aria-hidden="true" focusable="false" class="ring-svg" viewBox="0 0 320 320">
       <circle fill="none" stroke="var(--surface2)" stroke-width="10" cx="160" cy="160" r="145"/>
       <circle fill="none" stroke="var(--accent)" stroke-width="10" cx="160" cy="160" r="145"
         id="focusRing" stroke-dasharray="911" stroke-dashoffset="0" stroke-linecap="round" style="transform:rotate(-90deg);transform-origin:center"/>
@@ -1541,28 +973,30 @@ body.theme-light .home-metric{background:rgba(255,255,255,0.76);border-color:var
     </div>
   </div>
   <div class="flex-row" style="gap:16px;margin-top:16px">
-    <button class="pomo-btn-side" onclick="skipPomodoro()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l10 8-10 8V4z"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+    <button type="button" class="pomo-btn-side" onclick="skipPomodoro()" title="Skip to next phase" aria-label="Skip to next phase">
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l10 8-10 8V4z"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
     </button>
-    <button class="pomo-btn-main play" onclick="togglePomodoro()" style="width:80px;height:80px">
-      <svg id="focusPlayIcon" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>
+    <button type="button" class="pomo-btn-main play" id="focusBtnMain" onclick="togglePomodoro()" style="width:80px;height:80px" aria-label="Start session">
+      <svg aria-hidden="true" focusable="false" id="focusPlayIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
     </button>
-    <button class="pomo-btn-side" onclick="resetPomodoro()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    <button type="button" class="pomo-btn-side" onclick="resetPomodoro()" title="Reset session" aria-label="Reset session">
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
     </button>
   </div>
   <div id="focusTaskDisplay" style="font-size:16px;color:var(--text3);margin-top:8px"></div>
 </div>
 
 <!-- TOASTS -->
-<div class="toasts" id="toasts"></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
 
 <!-- CONTEXT MENU -->
-<div class="ctx-menu" id="ctxMenu" style="display:none"></div>
+<div class="ctx-menu" id="ctxMenu" role="menu" aria-label="Ambient sounds" style="display:none"></div>
 
-<script src="js/core.js"></script>
-<script src="js/sync.js"></script>
-<script src="js/app.js"></script>
-<script type="module" src="js/firebase-bridge.js" onerror="window.dispatchEvent(new Event('zenflow-firebase-failed'))"></script>
+<script src="js/core.js?v=2.2.0"></script>
+<script src="js/calendar-core.js?v=2.2.0"></script>
+<script src="js/sync.js?v=2.2.0"></script>
+<script src="js/calendar-ui.js?v=2.2.0"></script>
+<script src="js/app.js?v=2.2.0"></script>
+<script type="module" src="js/firebase-bridge.js?v=2.2.0" onerror="window.dispatchEvent(new Event('zenflow-firebase-failed'))"></script>
 </body>
 </html>

@@ -12,3 +12,11 @@ export const firebaseConfig = {
 
 export const firestoreDbId = 'zenflow-db1';
 export const usersCollection = 'zenflow_users';
+
+// Cloud Functions live next to the database.
+export const functionsRegion = 'asia-southeast1';
+
+// Web Push public key ("Web Push certificates" in Firebase console →
+// Project settings → Cloud Messaging). Public by design. Push reminders stay
+// disabled until this is set; in-app reminders work regardless.
+export const vapidKey = '';

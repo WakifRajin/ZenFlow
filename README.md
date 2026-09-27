@@ -1,6 +1,6 @@
 # ZenFlow
 
-A focus and productivity suite that runs entirely in the browser: Pomodoro timer, tasks, countdown timer, stopwatch, time tracker, and analytics. It works without an account. An optional email/password login syncs data across devices through Firebase.
+A focus and productivity suite that runs in the browser: Pomodoro timer, tasks, calendar (events, reminders and alarms), countdown timer, stopwatch, time tracker, and analytics. It works without an account. An optional email/password login syncs data across devices through Firebase.
 
 ## Running locally
 
@@ -24,8 +24,13 @@ npm test             # node --test "tests/*.test.js", no dependencies (Node 20+)
 ## Architecture
 
 ```
-index.html              markup, CSS, CSP; loads the scripts below
+index.html              markup and CSP; loads the files below
+css/styles.css          design system: tokens, components, pages, themes
 js/core.js              pure domain logic (no DOM, storage or network) -> window.ZenCore
+js/calendar-core.js     calendar engine: time zones, RRULE repeats, reminders, Google mapping -> window.ZenCal
+js/calendar-ui.js       calendar views, event editor, reminder scheduler, alarms, push opt-in
+sw.js                   service worker for push reminders (no caching)
+functions/              Cloud Functions: Google Calendar two-way sync, OAuth, reminder push
 js/sync.js              LocalStore + SyncController (dependency-injected)  -> window.ZenSync
 js/app.js               UI: rendering, events, timers, auth UI
 js/firebase-bridge.js   ES module wrapping the Firebase SDK            -> window.ZenFlowFirebase
@@ -68,7 +73,27 @@ Each account has its own namespace (`guest`, or `u_<uid>`), so people sharing a 
 
 Run `zenflowDiagnostics()` in the browser console. It returns the sync state, the last error, storage health and the last 200 log events. Logs never contain emails, passwords, tokens or user content.
 
+## Design system
+
+`css/styles.css` is organised as tokens, then base, layout, components, pages, the Liquid Glass theme, and responsive rules.
+
+- **Spacing** uses `--space-1`…`--space-10` (a 4px grid). **Radii** are `--radius-sm/md/lg`. **Type** uses `--text-xs`…`--text-2xl`. Syne is for page and dialog titles, DM Sans for everything else, and DM Mono only for times and counters.
+- **Colours are named by role:** `--surface-1..4`, `--text`, `--text-muted`, `--text-subtle`, `--success/warning/danger/info`. Each theme (dark, `body.theme-light`, `body.theme-glass`) overrides only these tokens. Every text token meets WCAG AA (4.5:1) on the surfaces it is used on.
+- **Accent tokens** (`--accent`, `--accent-strong`, `--accent-text`, `--accent-soft`, `--on-accent`) are computed at runtime by `applyAccent()` in `app.js`. That way any of the accent choices keeps readable button labels and accent-coloured text in every theme.
+- **Liquid Glass** blurs only large containers, for scrolling performance. It falls back to solid surfaces when the browser lacks `backdrop-filter`, or when the OS asks for reduced transparency or higher contrast.
+- **Legacy variable names** (`--text3`, `--bg3`, …) are aliases, still used by inline styles in `app.js`.
+
+## Calendar and Google Calendar
+
+Events, reminders and alarms work entirely in the browser. Push reminders (while ZenFlow is closed) and two-way Google Calendar sync need the Cloud Functions backend. Setup is in **[docs/calendar-setup.md](docs/calendar-setup.md)**.
+
+- **Client and server share one engine.** `calendar-core.js` handles repeats, time zones and reminder timing, and `functions/` copies the same file at deploy (`npm --prefix functions run build`).
+- **Server sync uses the client's merge.** Server-side Google sync writes through the same transactional merge as the client, so concurrent edits are never lost. Inserts use deterministic Google IDs, so a retry can't create duplicates.
+- **Tests:** `tests/calendar.test.js` covers the engine, and `tests/backend.test.js` covers sync, OAuth and reminder planning against a fake Google Calendar.
+
 ## Deploying
+
+0. When you change any CSS or JS file, bump the `?v=` query in `index.html` (and the `firebase-config.js` import in `firebase-bridge.js`), so browsers don't mix cached old files with new markup.
 
 1. Serve the repository root from any static host.
 2. Deploy the Firestore rules: `firebase deploy --only firestore:rules` (uses `firebase.json`, database `zenflow-db1`). Without them the cloud data is only as safe as whatever rules the project currently has.
@@ -82,3 +107,5 @@ Run `zenflowDiagnostics()` in the browser console. It returns the sync state, th
 - A device that stays offline for more than 90 days can bring back items deleted elsewhere, because tombstones expire.
 - v1 daily statistics were stored under UTC dates and mixed tracker time into focus time. Migrated history keeps those values; everything recorded after the upgrade uses local days and Pomodoro time only.
 - Firebase Analytics loads for every visitor, with no consent step.
+- "Reset all data" deletes the cloud copy, but another device (or browser) that is still signed in to the same account will upload its own copy the next time it syncs. Sign out on the other devices before resetting.
+- The CSP still needs `'unsafe-inline'` because the static markup uses inline `onclick` handlers, so it limits where scripts can be loaded from and where data can be sent, but it does not by itself stop injected inline script. XSS protection comes from sanitisation and escaping.

@@ -89,6 +89,7 @@
     let ns = 'guest';
     let blob = null;
     let lastError = null;
+    let recoveredCorrupt = false;
 
     function freshBlob(origin) {
       return { v: 2, replica: C.newId('r'), origin: origin || '', data: C.defaultData(), runtime: C.defaultRuntime(), prefs: C.defaultPrefs() };
@@ -118,7 +119,11 @@
       try {
         return normalize(JSON.parse(raw));
       } catch (e) {
-        log.error('local data unreadable; starting empty for this namespace', { ns: n });
+        // Keep the unreadable copy so it can be recovered by hand; the next
+        // save would otherwise overwrite it.
+        try { storage.setItem(nsKey(n) + '_unreadable', raw); } catch (_) { /* quota */ }
+        recoveredCorrupt = true;
+        log.error('local data unreadable; kept a copy and started empty', { ns: n });
         return null;
       }
     }
@@ -192,7 +197,8 @@
         blob.runtime = incoming.runtime;
         runtimeChanged = true;
       }
-      if (mergedStr !== JSON.stringify(incoming.data)) writeBlob(ns, blob);
+      // Write back if we hold data or a newer runtime that storage lacks.
+      if (mergedStr !== JSON.stringify(incoming.data) || blob.runtime.rev > incoming.runtime.rev) writeBlob(ns, blob);
       return { dataChanged, runtimeChanged };
     }
 
@@ -222,6 +228,8 @@
       get replica() { return blob.replica; },
       get origin() { return blob.origin; },
       get lastError() { return lastError; },
+      get recoveredCorrupt() { return recoveredCorrupt; },
+      writeNamespace: (n, b) => (n === ns ? (blob = b, writeBlob(n, b)) : writeBlob(n, b)),
       replaceData(d) { blob.data = d; },
       touchRuntime() { blob.runtime.rev = Math.max(now(), blob.runtime.rev + 1); },
       readNamespace: (n) => (n === ns ? blob : readBlob(n)),
@@ -257,6 +265,7 @@
 
     const st = {
       status: 'signed-out', uid: null, email: '', profile: null,
+      google: null,
       gen: 0, dirty: false, running: null, runningGen: -1, debounce: null, retry: null, attempt: 0,
       lastSyncedAt: null, lastError: null, nextRetryAt: null
     };
@@ -265,6 +274,7 @@
       return {
         status: st.status, uid: st.uid, email: st.email,
         nickname: (st.profile && st.profile.nickname) || '',
+        google: st.google || C.sanitizeGoogleStatus(null),
         lastSyncedAt: st.lastSyncedAt, lastError: st.lastError, nextRetryAt: st.nextRetryAt,
         pending: st.dirty || !!st.running
       };
@@ -286,9 +296,12 @@
       const merged = C.merge(local, remoteData || local, now());
       const bytes = C.assertCloudSize(merged);
       const doc = { schemaVersion: C.SCHEMA_VERSION, data: merged };
-      const profile = remoteDoc && remoteDoc.profile && typeof remoteDoc.profile === 'object' ? remoteDoc.profile : null;
+      const profile = C.sanitizeProfile(remoteDoc && remoteDoc.profile);
       if (profile) doc.profile = profile;
-      return { doc, data: merged, profile, bytes };
+      // The server owns the Google status field; rewrite it unchanged (rules
+      // reject client writes that alter it).
+      if (remoteDoc && remoteDoc.google !== undefined) doc.google = remoteDoc.google;
+      return { doc, data: merged, profile, bytes, google: C.sanitizeGoogleStatus(remoteDoc && remoteDoc.google) };
     }
 
     function fail(err, gen) {
@@ -338,6 +351,7 @@
             store.replaceData(C.merge(store.data, result.data, now()));
             store.save();
             st.profile = result.profile || st.profile;
+            st.google = result.google;
             st.lastSyncedAt = now();
             st.lastError = null;
             st.attempt = 0;
@@ -382,18 +396,31 @@
       let merged = false;
       const guest = store.readNamespace('guest');
       if (guest && C.hasMeaningfulData(guest.data)) {
-        // Restored v1 sessions: the v1 blob belonged to the signed-in user.
+        // A v1 blob restored with a session belonged to that signed-in user.
+        // This applies once: the first decision (either way) clears the flag.
         let accept = !o.interactive && guest.origin === 'legacy';
+        let decided = accept;
         if (!accept && o.interactive) {
           accept = await confirmGuestMerge();
+          decided = true;
           if (gen !== st.gen) return;
         }
         if (accept) {
           store.replaceData(C.merge(store.data, guest.data, now()));
+          // Keep guest timers that are still running (nothing is lost).
+          const rt = store.runtime;
+          let moved = false;
+          for (const k of ['pomo', 'timer', 'sw', 'tracking']) {
+            if (guest.runtime[k].status !== 'idle' && rt[k].status === 'idle') { rt[k] = guest.runtime[k]; moved = true; }
+          }
+          if (moved) store.touchRuntime();
           store.save();
           store.removeNamespace('guest');
           merged = true;
-          log.info('guest data merged into account');
+          log.info('guest data merged into account', { timersMoved: moved });
+        } else if (decided && guest.origin) {
+          guest.origin = '';
+          store.writeNamespace('guest', guest);
         }
       }
       if (switching || merged) onDataApplied('namespace');
@@ -447,17 +474,19 @@
     async function deleteCloudData(ms) {
       if (!st.uid) return;
       const uid = st.uid;
+      // Detach first: no edit made while the delete is pending may schedule a
+      // sync that writes the document back.
       st.gen++;
+      st.uid = null;
       clearTimers();
       st.dirty = false;
       if (st.running) await st.running.catch(() => {});
       try {
         await withTimeout(bridge.deleteUserData(uid), ms || 10000, timers, C);
         log.info('cloud data deleted');
-        // Detach from the account: nothing may be written back to it.
-        st.uid = null;
         setStatus('signed-out');
       } catch (err) {
+        st.uid = uid; // still signed in; resume normal syncing
         st.dirty = true;
         runLoop(st.gen);
         throw err;
@@ -465,7 +494,7 @@
     }
 
     function setProfile(profile) {
-      st.profile = profile;
+      st.profile = C.sanitizeProfile(profile);
       onChange(snapshot());
     }
 
@@ -474,6 +503,33 @@
         clearTimers();
         runLoop(st.gen);
       }
+    }
+
+    // Live update from a document listener (e.g. events the server pulled
+    // from Google, or another device's edits). Merges without writing; any
+    // local-only changes are already marked dirty and sync normally.
+    function applyRemote(uid, doc) {
+      if (!st.uid || uid !== st.uid) return false;
+      st.google = C.sanitizeGoogleStatus(doc && doc.google);
+      st.profile = C.sanitizeProfile(doc && doc.profile) || st.profile;
+      let changed = false;
+      try {
+        const remoteData = C.dataFromRemoteDoc(doc, now());
+        if (remoteData) {
+          const before = JSON.stringify(store.data);
+          const merged = C.merge(store.data, remoteData, now());
+          if (JSON.stringify(merged) !== before) {
+            store.replaceData(merged);
+            store.save();
+            changed = true;
+          }
+        }
+      } catch (err) {
+        log.warn('ignored remote snapshot', { code: errCode(err) });
+      }
+      if (changed) onDataApplied('remote');
+      onChange(snapshot());
+      return changed;
     }
 
     // Shutdown: cancel timers and invalidate any in-flight result. Terminal.
@@ -486,7 +542,7 @@
     }
 
     return {
-      handleAuth, markDirty, syncNow, flush, signOut, deleteCloudData, setProfile, onOnline, dispose,
+      handleAuth, markDirty, syncNow, flush, signOut, deleteCloudData, setProfile, onOnline, dispose, applyRemote,
       snapshot,
       get uid() { return st.uid; },
       get status() { return st.status; },

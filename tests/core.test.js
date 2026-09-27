@@ -145,7 +145,7 @@ test('merge: deletions propagate via tombstones and are not resurrected by a sta
   assert.ok(C.removeItem(a, ['todos', 'items'], 't1', T0 + 5));
   const m = C.merge(a, stale, T0 + 6);
   assert.equal(m.todos.items.length, 0);
-  assert.ok(m.tombstones.t1 >= T0 + 5);
+  assert.ok(m.tombstones['t:t1'] >= T0 + 5);
   // ...but an edit made after the deletion wins.
   const edited = data();
   addTodo(edited, 't1', 'edited later', T0 + 100);
@@ -423,4 +423,66 @@ test('merge is commutative, idempotent and associative (so replicas converge)', 
     assert.deepEqual(C.merge(xy, xy, T0), xy, 'idempotent');
     assert.deepEqual(strip(C.merge(C.merge(x, y, T0), z, T0)), strip(C.merge(x, C.merge(y, z, T0), T0)), 'associative');
   }
+});
+
+// ---------------------------------------------------------------------------
+// Second-pass review regressions
+// ---------------------------------------------------------------------------
+test('review#1: clearing the session log never deletes the garden or stats', () => {
+  const d = data(), p = C.defaultRuntime().pomo, c = cfg();
+  C.pomoStart(p, c, T0);
+  C.pomoFinish(d, p, c, { now: T0 + 1500000, replica: 'r' });
+  for (const l of [...d.pomo.log]) C.removeItem(d, ['pomo', 'log'], l.id, T0 + 1600000);
+  const m = C.merge(d, C.sanitizeData(JSON.parse(JSON.stringify(d))), T0 + 1700000);
+  assert.equal(m.pomo.log.length, 0);
+  assert.equal(m.pomo.garden.length, 1);
+  assert.equal(C.lifetimeTotals(m.stats).sessions, 1);
+});
+
+test('review#2: deleting default preset p1 does not delete default project p1', () => {
+  const d = data();
+  C.removeItem(d, ['timer', 'presets'], 'p1', T0);
+  const m = C.merge(d, data(), T0);
+  assert.ok(!m.timer.presets.some((x) => x.id === 'p1'));
+  assert.ok(m.tracking.projects.some((x) => x.id === 'p1'));
+});
+
+test('review#3: merge output is byte-identical regardless of key insertion order', () => {
+  const a = data(), b = data();
+  a.tombstones['t:x'] = T0; a.tombstones['t:y'] = T0 + 1;
+  b.tombstones['t:y'] = T0 + 1; b.tombstones['t:x'] = T0;
+  C.creditFocus(a, 'rB', 10, false, T0); C.creditFocus(a, 'rA', 10, false, T0);
+  C.creditFocus(b, 'rA', 10, false, T0); C.creditFocus(b, 'rB', 10, false, T0);
+  assert.equal(JSON.stringify(C.merge(a, b, T0)), JSON.stringify(C.merge(b, a, T0)));
+  assert.equal(JSON.stringify(C.merge(a, b, T0)), JSON.stringify(C.sanitizeData(C.merge(a, b, T0))));
+});
+
+test('review#7: a session that ended at 23:50 is credited to that day even if the app reopens tomorrow', () => {
+  withTZ('Asia/Dhaka', () => {
+    const d = data(), p = C.defaultRuntime().pomo, c = cfg();
+    const start = new Date(2026, 8, 26, 23, 25).getTime();
+    C.pomoStart(p, c, start);
+    C.pomoFinish(d, p, c, { now: new Date(2026, 8, 27, 8, 0).getTime(), replica: 'r' });
+    assert.deepEqual(Object.keys(d.stats.daily), ['2026-09-26']);
+    assert.equal(d.pomo.garden[0].at, start + 1500000);
+  });
+});
+
+test('review#8: deleted built-in defaults stay deleted past the tombstone TTL', () => {
+  const d = data();
+  C.removeItem(d, ['timer', 'presets'], 'p2', T0);
+  const later = T0 + C.LIMITS.tombstoneTtlMs + 86400000;
+  assert.ok(!C.merge(d, data(), later).timer.presets.some((x) => x.id === 'p2'));
+});
+
+test('review#9 / P3: profile is sanitized; a newer-schema cloud doc is refused, not overwritten', () => {
+  assert.equal(C.sanitizeProfile({ nickname: { evil: 1 } }), null);
+  assert.deepEqual(C.sanitizeProfile({ nickname: '  Azu   W  ', extra: 1 }), { nickname: 'Azu W' });
+  assert.deepEqual(C.sanitizeProfile({ nickname: 'Chris' }), { nickname: 'Chris' });
+  assert.throws(() => C.dataFromRemoteDoc({ schemaVersion: 3, data: {} }, T0), { code: 'zenflow/newer-schema' });
+});
+
+test('settings accept the liquid glass theme and reject unknown themes', () => {
+  assert.equal(C.sanitizeData({ schemaVersion: 2, settings: { theme: 'glass' } }).settings.theme, 'glass');
+  assert.equal(C.sanitizeData({ schemaVersion: 2, settings: { theme: 'neon' } }).settings.theme, 'dark');
 });

@@ -3,9 +3,9 @@ rules_version = '2';
 // ZenFlow security rules for database "zenflow-db1".
 // Deploy: firebase deploy --only firestore:rules
 //
-// Each signed-in user may read, write and delete only their own document
-// zenflow_users/{uid}. Everything else is denied. The client sanitizes all
-// data it reads, but these rules are the actual security boundary.
+// Signed-in users may read/write only their own document and device list.
+// Server-only collections (OAuth tokens, reminder queues) are closed to all
+// clients; Cloud Functions use the Admin SDK, which bypasses these rules.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -22,20 +22,39 @@ service cloud.firestore {
       );
     }
 
+    // `google` holds the Google Calendar connection status and is written only
+    // by the server. Clients must send it back unchanged (or not at all).
+    function googleUnchanged(d) {
+      return resource == null
+        ? (!('google' in d) || d.google == null)
+        : (('google' in d) == ('google' in resource.data)) &&
+          (!('google' in d) || d.google == resource.data.google);
+    }
+
     function validDoc(d) {
-      // v2 fields; the v1 fields (state, dailyStats, clientUpdatedAt) remain
-      // writable so clients still running a cached v1 page keep working until
-      // they reload. Remove them from this list once v1 is gone.
-      return d.keys().hasOnly(['profile', 'data', 'schemaVersion', 'updatedAt',
+      // v1 fields (state, dailyStats, clientUpdatedAt) stay writable so a
+      // cached v1 page keeps working until reload; drop them once v1 is gone.
+      return d.keys().hasOnly(['profile', 'data', 'schemaVersion', 'updatedAt', 'google',
                                'state', 'dailyStats', 'clientUpdatedAt']) &&
         (!('schemaVersion' in d) || d.schemaVersion == 2) &&
         (!('data' in d) || d.data is map) &&
-        validProfile(d);
+        validProfile(d) &&
+        googleUnchanged(d);
     }
 
     match /zenflow_users/{uid} {
       allow read, delete: if isOwner(uid);
       allow create, update: if isOwner(uid) && validDoc(request.resource.data);
+
+      // Web push tokens for this user's devices.
+      match /devices/{deviceId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.keys().hasOnly(['token', 'platform', 'updatedAt'])
+          && request.resource.data.token is string
+          && request.resource.data.token.size() < 4096
+          && (!('platform' in request.resource.data) || (request.resource.data.platform is string && request.resource.data.platform.size() <= 200));
+      }
     }
 
     match /{document=**} {

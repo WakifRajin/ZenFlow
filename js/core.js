@@ -39,6 +39,10 @@
     desc: 200,
     subtasks: 50,
     nickname: 24,
+    events: 2000,
+    eventTitle: 200,
+    eventDesc: 4000,
+    eventLocation: 300,
     // Firestore's hard limit is 1 MiB per document; keep headroom.
     docBytes: 900000
   });
@@ -120,6 +124,31 @@
     return (prefix ? prefix + '_' : '') + r.slice(0, 24);
   }
 
+  // Deep copy with object keys in sorted order. Every persisted/merged object
+  // goes through this so two replicas holding the same state produce the same
+  // bytes (tabs compare serialized copies to decide whether to write back).
+  function canonical(v) {
+    if (Array.isArray(v)) return v.map(canonical);
+    if (v && typeof v === 'object') {
+      const out = {};
+      for (const k of Object.keys(v).sort()) out[k] = canonical(v[k]);
+      return out;
+    }
+    return v;
+  }
+
+  // Tombstones are scoped per collection: ids are only unique within one
+  // collection (e.g. default preset "p1" and default project "p1").
+  const COLLECTION_CODES = {
+    'todos.items': 't', 'todos.lists': 'l', 'timer.presets': 'pr', 'tracking.entries': 'e',
+    'tracking.projects': 'pj', 'pomo.garden': 'g', 'pomo.log': 'lg', 'calendar.events': 'ev'
+  };
+  const TOMB_KEY_RE = /^(t|l|pr|e|pj|g|lg|ev):(?!__)[A-Za-z0-9_-]{1,64}$/;
+  const tombKey = (path, id) => COLLECTION_CODES[path.join('.')] + ':' + id;
+  // Built-in defaults are re-seeded into every fresh copy; their deletions
+  // must never expire or they would come back after the TTL.
+  const PERMANENT_TOMBS = new Set(['l:inbox', 'l:work', 'l:personal', 'pr:p1', 'pr:p2', 'pr:p3', 'pr:p4', 'pr:p5', 'pj:p0', 'pj:p1']);
+
   // ---------------------------------------------------------------------------
   // Dates (local calendar semantics everywhere)
   // ---------------------------------------------------------------------------
@@ -200,7 +229,8 @@
     ['settings', 'sound'], ['settings', 'volume'],
     ['pomo', 'workMins'], ['pomo', 'shortMins'], ['pomo', 'longMins'], ['pomo', 'sessionsBeforeLong'],
     ['pomo', 'autoBreak'], ['pomo', 'autoWork'], ['pomo', 'sound'],
-    ['timer', 'recent']
+    ['timer', 'recent'],
+    ['calendar', 'googleSelection']
   ];
 
   function defaultData() {
@@ -239,6 +269,7 @@
           { id: 'p1', name: 'Work', color: 1, createdAt: 1, updatedAt: 0 }
         ]
       },
+      calendar: { events: [], googleSelection: [] },
       stats: { daily: {}, counters: {} },
       tombstones: {}
     };
@@ -250,12 +281,17 @@
       pomo: { mode: 'work', session: 1, status: 'idle', total: null, remaining: null, targetEnd: null, sessionId: null, startedAt: null, task: '' },
       timer: { status: 'idle', total: 300, remaining: 300, targetEnd: null, laps: [], activePreset: null, finishedAt: null },
       sw: { status: 'idle', startTime: 0, elapsed: 0, laps: [], lastLap: 0 },
-      tracking: { status: 'idle', startTime: null, current: { desc: '', project: '', tag: 'none' } }
+      tracking: { status: 'idle', startTime: null, current: { desc: '', project: '', tag: 'none' } },
+      firedReminders: {},
+      reminderCheckedAt: 0
     };
   }
 
   function defaultPrefs() {
-    return { activeList: 'all', activeFilter: 'all', activeTag: '', trackingFilter: 'all', todoSort: 'created', ambient: null, ambientPlaying: false };
+    return {
+      activeList: 'all', activeFilter: 'all', activeTag: '', trackingFilter: 'all', todoSort: 'created', ambient: null, ambientPlaying: false,
+      calView: 'month', calCursor: '', weekStart: 1, hiddenCals: [], pushDeviceId: ''
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -268,7 +304,7 @@
     return {
       accent: HEX_RE.test(s.accent) ? s.accent : d.accent,
       accent2: HEX_RE.test(s.accent2) ? s.accent2 : d.accent2,
-      theme: s.theme === 'light' ? 'light' : 'dark',
+      theme: ['light', 'dark', 'system', 'glass'].includes(s.theme) ? s.theme : 'dark',
       bgStyle: s.bgStyle === 'darker' ? 'darker' : 'dark',
       sound: SOUNDS.includes(s.sound) ? s.sound : d.sound,
       volume: int(s.volume, 0, 100, d.volume)
@@ -402,6 +438,75 @@
     };
   }
 
+  // Calendar events (model documented in calendar-core.js).
+  const EVENT_KINDS = ['event', 'reminder', 'alarm'];
+  function validZone(tz) {
+    if (typeof tz !== 'string' || !/^[A-Za-z0-9_+\-/]{1,64}$/.test(tz)) return false;
+    try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return true; } catch (_) { return false; }
+  }
+  function nextDayKey(k) {
+    const d = parseDayKey(k);
+    return localDayKey(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1));
+  }
+  function sanitizeEvent(e) {
+    if (!isObj(e) || !isValidId(e.id)) return null;
+    const allDay = e.allDay === true;
+    const out = {
+      id: e.id,
+      title: str(e.title, LIMITS.eventTitle).trim() || '(No title)',
+      description: str(e.description, LIMITS.eventDesc),
+      location: str(e.location, LIMITS.eventLocation),
+      kind: EVENT_KINDS.includes(e.kind) ? e.kind : 'event',
+      allDay,
+      timeZone: validZone(e.timeZone) ? e.timeZone : 'UTC',
+      start: null, end: null, startDate: '', endDate: '',
+      rrule: typeof e.rrule === 'string' && /^[A-Za-z0-9=;,+\-]{0,500}$/.test(e.rrule) ? e.rrule.toUpperCase() : '',
+      exdates: [],
+      recurrenceId: isValidId(e.recurrenceId) ? e.recurrenceId : '',
+      originalStart: null,
+      reminders: arr(e.reminders).filter(isObj).slice(0, 5).map((r) => ({ offsetMin: int(r.offsetMin, 0, 40320, 0), type: r.type === 'alarm' ? 'alarm' : 'notify' })),
+      color: HEX_RE.test(e.color) ? e.color : '',
+      cal: e.cal === 'local' || (typeof e.cal === 'string' && /^g:\S{1,200}$/.test(e.cal)) ? e.cal : 'local',
+      source: e.source === 'google' ? 'google' : 'local',
+      readOnly: e.readOnly === true,
+      google: null,
+      snoozes: {},
+      done: e.done === true,
+      createdAt: toMs(e.createdAt, 0),
+      updatedAt: toMs(e.updatedAt, toMs(e.createdAt, 0))
+    };
+    if (allDay) {
+      if (!parseDayKey(e.startDate)) return null;
+      out.startDate = e.startDate;
+      out.endDate = parseDayKey(e.endDate) && e.endDate > e.startDate ? e.endDate : nextDayKey(e.startDate);
+      out.exdates = uniq(arr(e.exdates).filter((k) => parseDayKey(k))).slice(0, 500);
+      out.originalStart = parseDayKey(e.originalStart) ? e.originalStart : null;
+    } else {
+      const start = toMs(e.start, NaN);
+      if (!Number.isFinite(start)) return null;
+      let end = toMs(e.end, NaN);
+      if (!Number.isFinite(end) || end < start || end - start > 366 * DAY_MS) end = start + 30 * 60000;
+      out.start = start;
+      out.end = end;
+      out.exdates = uniq(arr(e.exdates).map((x) => toMs(x, NaN)).filter(Number.isFinite)).slice(0, 500);
+      out.originalStart = toMs(e.originalStart, null);
+    }
+    if (!out.recurrenceId) out.originalStart = null;
+    if (isObj(e.google) && typeof e.google.calendarId === 'string' && e.google.calendarId && typeof e.google.eventId === 'string' && e.google.eventId) {
+      out.google = {
+        calendarId: e.google.calendarId.slice(0, 200), eventId: e.google.eventId.slice(0, 1024),
+        etag: str(e.google.etag, 200), updated: toMs(e.google.updated, 0), syncedAt: toMs(e.google.syncedAt, 0)
+      };
+    }
+    if (isObj(e.snoozes)) {
+      for (const [k, v] of Object.entries(e.snoozes).slice(0, 20)) {
+        const t = toMs(v, NaN);
+        if (/^[A-Za-z0-9_-]{1,64}\|[0-9A-Za-z-]{1,24}\|[0-4]$/.test(k) && Number.isFinite(t)) out.snoozes[k] = t;
+      }
+    }
+    return out;
+  }
+
   function sanitizeCounterMap(m, fields) {
     const out = {};
     if (!isObj(m)) return out;
@@ -470,6 +575,7 @@
     const todos = isObj(raw.todos) ? raw.todos : {};
     const timer = isObj(raw.timer) ? raw.timer : {};
     const tracking = isObj(raw.tracking) ? raw.tracking : {};
+    const calendar = isObj(raw.calendar) ? raw.calendar : {};
     const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
     const out = {
       schemaVersion: SCHEMA_VERSION,
@@ -492,10 +598,14 @@
         entries: cleanList(tracking.entries, sanitizeEntry).sort(byStartDesc).slice(0, LIMITS.entries),
         projects: (has(tracking, 'projects') ? cleanList(tracking.projects, sanitizeProject) : d.tracking.projects).sort(byCreatedAsc)
       },
+      calendar: {
+        events: cleanList(calendar.events, sanitizeEvent).sort(byCreatedAsc).slice(0, LIMITS.events),
+        googleSelection: uniq(arr(calendar.googleSelection).filter((x) => typeof x === 'string' && x.length > 0 && x.length <= 200)).slice(0, 20)
+      },
       stats: sanitizeStats(raw.stats),
-      tombstones: sanitizeTimeMap(raw.tombstones, isValidId)
+      tombstones: sanitizeTimeMap(raw.tombstones, (k) => TOMB_KEY_RE.test(k))
     };
-    return out;
+    return canonical(out);
   }
 
   // Convert the pre-v2 persisted state (+ separate daily_stats) into v2.
@@ -612,7 +722,15 @@
         tag: /^[a-z]{1,20}$/.test(cur.tag) ? cur.tag : 'none'
       }
     };
-    return { rev: toMs(r.rev, 0), pomo, timer, sw, tracking };
+    // Reminder keys already delivered on this device (key -> fire time).
+    const firedReminders = {};
+    if (isObj(r.firedReminders)) {
+      for (const [k, v] of Object.entries(r.firedReminders).slice(-500)) {
+        const t = toMs(v, NaN);
+        if (k.length <= 120 && Number.isFinite(t)) firedReminders[k] = t;
+      }
+    }
+    return { rev: toMs(r.rev, 0), pomo, timer, sw, tracking, firedReminders, reminderCheckedAt: toMs(r.reminderCheckedAt, 0) };
   }
 
   function sanitizePrefs(p) {
@@ -625,7 +743,12 @@
       trackingFilter: TRACK_FILTERS.includes(p.trackingFilter) ? p.trackingFilter : d.trackingFilter,
       todoSort: ['created', 'priority', 'due', 'name'].includes(p.todoSort) ? p.todoSort : d.todoSort,
       ambient: AMBIENT_IDS.includes(p.ambient) ? p.ambient : null,
-      ambientPlaying: p.ambientPlaying === true && AMBIENT_IDS.includes(p.ambient)
+      ambientPlaying: p.ambientPlaying === true && AMBIENT_IDS.includes(p.ambient),
+      calView: ['month', 'week', 'agenda'].includes(p.calView) ? p.calView : d.calView,
+      calCursor: parseDayKey(p.calCursor) ? p.calCursor : '',
+      weekStart: p.weekStart === 0 ? 0 : 1,
+      hiddenCals: uniq(arr(p.hiddenCals).filter((x) => typeof x === 'string' && x.length <= 202)).slice(0, 30),
+      pushDeviceId: typeof p.pushDeviceId === 'string' && /^[0-9a-f]{1,64}$/.test(p.pushDeviceId) ? p.pushDeviceId : ''
     };
   }
 
@@ -655,7 +778,8 @@
     if (i < 0) return false;
     const t = Math.max(now, (list[i].updatedAt || 0) + 1);
     list.splice(i, 1);
-    data.tombstones[id] = Math.max(t, data.tombstones[id] || 0);
+    const k = tombKey(path, id);
+    data.tombstones[k] = Math.max(t, data.tombstones[k] || 0);
     data.updatedAt = Math.max(data.updatedAt || 0, t);
     return true;
   }
@@ -670,7 +794,8 @@
     { path: ['tracking', 'entries'], sort: byStartDesc, cap: LIMITS.entries },
     { path: ['tracking', 'projects'], sort: byCreatedAsc },
     { path: ['pomo', 'garden'], sort: byAtAsc, cap: -LIMITS.garden },
-    { path: ['pomo', 'log'], sort: byAtDesc, cap: LIMITS.log }
+    { path: ['pomo', 'log'], sort: byAtDesc, cap: LIMITS.log },
+    { path: ['calendar', 'events'], sort: byCreatedAsc, cap: LIMITS.events }
   ];
 
   // Equal clocks with different content can happen (two devices, same ms).
@@ -689,7 +814,11 @@
       if (!cur) { map.set(x.id, x); order.push(x.id); }
       else map.set(x.id, newerOf(cur, x, cur.updatedAt || 0, x.updatedAt || 0));
     }
-    let out = order.map((id) => map.get(id)).filter((x) => !(tomb[x.id] != null && tomb[x.id] >= (x.updatedAt || 0)));
+    const code = COLLECTION_CODES[spec.path.join('.')] + ':';
+    let out = order.map((id) => map.get(id)).filter((x) => {
+      const t = tomb[code + x.id];
+      return !(t != null && t >= (x.updatedAt || 0));
+    });
     out.sort(spec.sort);
     if (spec.cap > 0) out = out.slice(0, spec.cap);
     else if (spec.cap < 0) out = out.slice(spec.cap);
@@ -723,7 +852,7 @@
     for (const src of [a.tombstones, b.tombstones]) {
       for (const [id, t] of Object.entries(src)) tomb[id] = Math.max(tomb[id] || 0, t);
     }
-    for (const [id, t] of Object.entries(tomb)) if (t < now - LIMITS.tombstoneTtlMs) delete tomb[id];
+    for (const [k, t] of Object.entries(tomb)) if (t < now - LIMITS.tombstoneTtlMs && !PERMANENT_TOMBS.has(k)) delete tomb[k];
     out.tombstones = tomb;
 
     // Scalars: per-field last-writer-wins.
@@ -742,9 +871,9 @@
     ensureInbox(out.todos.lists);
     out.stats = mergeStats(a.stats, b.stats);
     out.updatedAt = Math.max(a.updatedAt || 0, b.updatedAt || 0);
-    // Deep copy: the result must not alias either input (it may be serialized
-    // by Firestore while the live local object keeps changing).
-    return JSON.parse(JSON.stringify(out));
+    // Deep copy (never aliases an input; Firestore may serialize it while the
+    // live local object keeps changing) in canonical key order.
+    return canonical(out);
   }
 
   // Import = explicit user restore. Imported scalar values become the newest,
@@ -755,7 +884,7 @@
     for (const [g, k] of SCALARS) imp.clocks[g + ':' + k] = Math.max(now, (local.clocks[g + ':' + k] || 0) + 1);
     for (const spec of COLLECTIONS) {
       for (const item of getPath(imp, spec.path)) {
-        const t = local.tombstones[item.id];
+        const t = local.tombstones[tombKey(spec.path, item.id)];
         if (t != null && t >= (item.updatedAt || 0)) item.updatedAt = t + 1;
       }
     }
@@ -767,6 +896,9 @@
   // legacy layout {state, dailyStats, clientUpdatedAt} written by v1 clients.
   function dataFromRemoteDoc(doc, now) {
     if (!isObj(doc)) return null;
+    if (typeof doc.schemaVersion === 'number' && doc.schemaVersion > SCHEMA_VERSION) {
+      throw new ZenError('zenflow/newer-schema', 'Your cloud data was saved by a newer version of ZenFlow. Reload the page to update.');
+    }
     let out = null;
     if (isObj(doc.data)) out = sanitizeData(doc.data);
     if (isObj(doc.state)) {
@@ -774,6 +906,29 @@
       out = out ? merge(out, legacy, now) : legacy;
     }
     return out;
+  }
+
+  function sanitizeProfile(p) {
+    if (!isObj(p) || typeof p.nickname !== 'string') return null;
+    const nickname = p.nickname.replace(/\s+/g, ' ').trim().slice(0, LIMITS.nickname);
+    return nickname ? { nickname } : null;
+  }
+
+  // Server-owned Google connection status stored on the user document.
+  const ACCESS_ROLES = ['owner', 'writer', 'reader', 'freeBusyReader'];
+  function sanitizeGoogleStatus(g) {
+    if (!isObj(g)) return { connected: false, email: '', calendars: [], lastSyncAt: 0, error: null };
+    return {
+      connected: g.connected === true,
+      email: str(g.email, 200),
+      calendars: arr(g.calendars).filter((c) => isObj(c) && typeof c.id === 'string' && c.id).slice(0, 50).map((c) => ({
+        id: c.id.slice(0, 200), summary: str(c.summary, 120) || c.id.slice(0, 120),
+        color: HEX_RE.test(c.color) ? c.color : '', accessRole: ACCESS_ROLES.includes(c.accessRole) ? c.accessRole : 'reader',
+        primary: c.primary === true, timeZone: str(c.timeZone, 64)
+      })),
+      lastSyncAt: toMs(g.lastSyncAt, 0),
+      error: isObj(g.error) ? { code: str(g.error.code, 60), message: str(g.error.message, 300) } : null
+    };
   }
 
   function byteSize(obj) {
@@ -789,7 +944,7 @@
 
   function hasMeaningfulData(data) {
     if (!data) return false;
-    return data.todos.items.length > 0 || data.tracking.entries.length > 0 || data.pomo.garden.length > 0 ||
+    return data.todos.items.length > 0 || data.calendar.events.length > 0 || data.tracking.entries.length > 0 || data.pomo.garden.length > 0 ||
       data.pomo.log.length > 0 || Object.keys(data.stats.daily).length > 0 ||
       Object.values(data.stats.counters).some((c) => c.sessions > 0 || c.focusSecs > 0);
   }
@@ -925,11 +1080,14 @@
     }
     const completed = !skipped;
     const task = str(opts.task, LIMITS.task);
+    // A session that ended while the app was closed belongs to when it ended
+    // (e.g. 23:50 yesterday), not to when the app was reopened.
+    const at = !skipped && p.status === 'running' && p.targetEnd ? Math.min(now, p.targetEnd) : now;
     let next;
     if (mode === 'work') {
-      if (elapsed > 0) creditFocus(data, opts.replica, elapsed, completed, now);
+      if (elapsed > 0) creditFocus(data, opts.replica, elapsed, completed, at);
       if (completed || elapsed >= 60) {
-        data.pomo.garden.push({ id: sid, mins: Math.round(elapsed / 60 * 100) / 100, at: now, task, abandoned: !completed, updatedAt: now });
+        data.pomo.garden.push({ id: sid, mins: Math.round(elapsed / 60 * 100) / 100, at, task, abandoned: !completed, updatedAt: now });
         if (data.pomo.garden.length > LIMITS.garden) data.pomo.garden.splice(0, data.pomo.garden.length - LIMITS.garden);
       }
       if (p.session >= cfg.sessionsBeforeLong) { p.session = 1; next = 'long-break'; }
@@ -938,7 +1096,7 @@
       next = 'work';
     }
     if (completed || elapsed > 0) {
-      data.pomo.log.unshift({ id: sid, type: mode, mins: Math.round(elapsed / 60 * 100) / 100, task: mode === 'work' ? task : '', at: now, label: '', skipped, updatedAt: now });
+      data.pomo.log.unshift({ id: sid, type: mode, mins: Math.round(elapsed / 60 * 100) / 100, task: mode === 'work' ? task : '', at, label: '', skipped, updatedAt: now });
       if (data.pomo.log.length > LIMITS.log) data.pomo.log.length = LIMITS.log;
     }
     data.updatedAt = Math.max(data.updatedAt || 0, now);
@@ -1075,7 +1233,7 @@
     pad, localDayKey, parseDayKey, addDays, dayDiff, describeDue,
     formatTime, formatHMS, formatDuration, formatMs,
     defaultData, defaultRuntime, defaultPrefs,
-    sanitizeData, sanitizeRuntime, sanitizePrefs, migrateLegacy, dataFromRemoteDoc,
+    tombKey, sanitizeEvent, sanitizeData, sanitizeRuntime, sanitizePrefs, sanitizeProfile, sanitizeGoogleStatus, migrateLegacy, dataFromRemoteDoc, canonical,
     setScalar, touchItem, removeItem,
     merge, prepareImport, byteSize, assertCloudSize, hasMeaningfulData,
     makeBackup, parseBackup,

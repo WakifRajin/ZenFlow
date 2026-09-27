@@ -310,3 +310,95 @@ test('M9: deleting cloud data waits for an in-flight sync so the document is not
   await tick(30);
   assert.equal(s.backend.docs.has('userA'), false);
 });
+
+// ---------------------------------------------------------------------------
+// Second-pass review regressions
+// ---------------------------------------------------------------------------
+test('review#3: two tabs with differently ordered state stop writing after converging', () => {
+  const storage = new MemoryStorage();
+  const t1 = S.createLocalStore({ core: C, storage }); t1.boot();
+  const t2 = S.createLocalStore({ core: C, storage }); t2.boot();
+  t1.data.tombstones['t:x'] = 1; t1.data.tombstones['t:y'] = 2; t1.save();
+  t2.data.tombstones['t:y'] = 2; t2.data.tombstones['t:x'] = 1;
+  const key = t1.keyFor('guest');
+  let events = 0;
+  const queue = [[t2, storage.getItem(key)]];
+  while (queue.length && events < 20) {
+    const [tab, value] = queue.shift();
+    const before = storage.writes;
+    tab.applyExternal(key, value);
+    events++;
+    if (storage.writes > before) queue.push([tab === t1 ? t2 : t1, storage.getItem(key)]);
+  }
+  assert.ok(events < 20, 'converges without an endless write loop');
+});
+
+test('review#4: edits made while the cloud delete is pending cannot re-create the document', async () => {
+  const s = setup();
+  await s.sync.handleAuth(userA);
+  addTodo(s.store, 'x', 'x');
+  await s.sync.syncNow();
+  const origDelete = s.backend.deleteUserData;
+  let releaseDelete;
+  s.backend.deleteUserData = (uid) => new Promise((r) => { releaseDelete = () => r(origDelete(uid)); });
+  const deleting = s.sync.deleteCloudData(1000);
+  await tick(5);
+  addTodo(s.store, 'y', 'edit during delete');
+  s.sync.markDirty();
+  await tick(10);
+  releaseDelete();
+  await deleting;
+  await tick(20);
+  assert.equal(s.backend.docs.has('userA'), false);
+});
+
+test('review#5: declining the guest merge is final; a later session restore does not sweep v1 data in', async () => {
+  const storage = new MemoryStorage();
+  storage.setItem('zf_state', JSON.stringify({ todos: { items: [{ id: 'secret', text: 'person A secret' }] } }));
+  const backend = fakeBackend();
+  const s1 = setup({ storage, backend, confirmGuestMerge: async () => false });
+  await s1.sync.handleAuth(userB, { interactive: true });
+  const s2 = setup({ storage, backend }); // reload: restored session, non-interactive
+  await s2.sync.handleAuth(userB, { interactive: false });
+  assert.deepEqual(todoIds(remoteData(backend, 'userB')), []);
+  assert.ok(s2.store.readNamespace('guest'), 'guest data kept on the device');
+});
+
+test('review#6: accepting the guest merge keeps running guest timers', async () => {
+  const s = setup({ confirmGuestMerge: async () => true });
+  addTodo(s.store, 'g', 'guest task');
+  C.trackStart(s.store.runtime.tracking, { desc: 'deep work', project: '', tag: 'none' }, Date.now() - 3600000);
+  s.store.save();
+  await s.sync.handleAuth(userA, { interactive: true });
+  assert.equal(s.store.namespace, 'u_userA');
+  assert.equal(s.store.runtime.tracking.status, 'running');
+  assert.equal(s.store.runtime.tracking.current.desc, 'deep work');
+});
+
+test('review#9: a hostile profile in the cloud cannot break the sync state machine', async () => {
+  const s = setup();
+  s.backend.docs.set('userA', { schemaVersion: 2, data: C.defaultData(), profile: { nickname: { toString: 1 } } });
+  await s.sync.handleAuth(userA);
+  assert.equal(s.sync.status, 'synced');
+  assert.equal(s.sync.snapshot().nickname, '');
+});
+
+test('review P1: a tab holding a newer runtime writes it back instead of losing it', () => {
+  const storage = new MemoryStorage();
+  const a = S.createLocalStore({ core: C, storage }); a.boot();
+  const b = S.createLocalStore({ core: C, storage }); b.boot();
+  C.pomoStart(a.runtime.pomo, a.data.pomo, Date.now());
+  a.touchRuntime(); a.save();          // A starts a session
+  b.save();                            // B, not yet aware, writes the same data with its older idle runtime
+  a.applyExternal(a.keyFor('guest'), storage.getItem(a.keyFor('guest')));
+  assert.equal(JSON.parse(storage.getItem(a.keyFor('guest'))).runtime.pomo.status, 'running');
+});
+
+test('review P4: an unreadable local blob is kept aside and reported', () => {
+  const storage = new MemoryStorage();
+  storage.setItem('zf_v2_active', 'guest');
+  storage.setItem('zf_v2_guest', '{broken');
+  const s = setup({ storage });
+  assert.equal(s.store.recoveredCorrupt, true);
+  assert.equal(storage.getItem('zf_v2_guest_unreadable'), '{broken');
+});

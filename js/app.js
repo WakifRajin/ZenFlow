@@ -118,23 +118,46 @@ function updateClock() {
 // ---------------------------------------------------------------------------
 // Navigation & layout
 // ---------------------------------------------------------------------------
-function navigate(page) {
+const PAGE_TITLES = { pomodoro: 'Focus', todo: 'Tasks', calendar: 'Calendar', timer: 'Timer', stopwatch: 'Stopwatch', tracking: 'Time log', forest: 'Stats', settings: 'Settings' };
+let currentPage = 'pomodoro';
+function idleTitle() {
+  return currentPage === 'pomodoro' ? 'ZenFlow — Focus & Productivity' : `${PAGE_TITLES[currentPage]} · ZenFlow`;
+}
+
+function navigate(page, opts = {}) {
   const target = document.getElementById('page-' + page);
   if (!target) return;
+  currentPage = page;
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach((n) => n.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach((n) => { n.classList.remove('active'); n.removeAttribute('aria-current'); });
   target.classList.add('active');
-  document.querySelector(`.nav-item[data-page="${page}"]`)?.classList.add('active');
+  const navItem = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (navItem) { navItem.classList.add('active'); navItem.setAttribute('aria-current', 'page'); }
+  // On phones, pages behind "More" highlight the More tab.
+  const inMore = ['timer', 'stopwatch', 'forest', 'settings'].includes(page);
+  document.getElementById('navMore')?.classList.toggle('is-current', inMore);
+  document.querySelectorAll('#modalMore .more-item').forEach((b) => b.toggleAttribute('aria-current', b.dataset.page === page));
+  if (RT().pomo.status !== 'running') document.title = idleTitle();
+  window.scrollTo(0, 0);
+  // Move focus to the new page's heading so keyboard and screen-reader users
+  // land in the content they just opened.
+  if (opts.focus !== false) target.querySelector('h1')?.focus({ preventScroll: true });
   if (page === 'todo') { renderTodoLists(); renderTodos(); }
   if (page === 'tracking') renderTrackingPage();
   if (page === 'forest') renderForest();
   if (page === 'timer') renderTimerPresets();
   if (page === 'settings') renderSettings();
   if (page === 'stopwatch') renderStopwatch();
+  if (page === 'calendar') window.ZenCalendarUI.render();
 }
 
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('expanded');
+  const expanded = document.getElementById('sidebar').classList.toggle('expanded');
+  const btn = document.getElementById('sidebarToggle');
+  if (btn) {
+    btn.setAttribute('aria-expanded', String(expanded));
+    btn.setAttribute('aria-label', expanded ? 'Collapse sidebar' : 'Expand sidebar');
+  }
 }
 function updateViewportHeightVar() {
   const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.01;
@@ -148,16 +171,106 @@ function syncResponsiveLayout() {
 // ---------------------------------------------------------------------------
 // Toasts, banner, modals
 // ---------------------------------------------------------------------------
-function toast(msg, type = 'info', icon = '') {
+const MAX_TOASTS = 4;
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Toasts live in a manual popover so they stay visible above open dialogs
+// (the top layer); re-showing it moves it to the top of the stack.
+function raiseToasts(t) {
+  if (typeof t.showPopover !== 'function') return;
+  if (!t.hasAttribute('popover')) t.setAttribute('popover', 'manual');
+  try {
+    if (t.matches(':popover-open')) t.hidePopover();
+    t.showPopover();
+  } catch (_) { /* not connected / unsupported */ }
+}
+
+function dismissToast(el) {
+  if (!el.isConnected || el.classList.contains('leaving')) return;
+  clearTimeout(el._timer);
+  el.classList.add('leaving');
+  setTimeout(() => {
+    const t = el.parentElement;
+    el.remove();
+    if (t && !t.children.length && t.hasAttribute('popover')) { try { t.hidePopover(); } catch (_) { /* closed */ } }
+  }, reducedMotion() ? 0 : 240);
+}
+
+// opts: { action: { label, onClick }, duration }
+function toast(msg, type = 'info', icon = '', opts = {}) {
   const t = document.getElementById('toasts');
   const el = document.createElement('div');
   el.className = 'toast toast-' + (['info', 'success', 'error'].includes(type) ? type : 'info');
+  if (type === 'error') el.setAttribute('role', 'alert');
   const i = document.createElement('span');
   i.className = 'toast-icon';
+  i.setAttribute('aria-hidden', 'true');
   i.textContent = icon || { info: 'ℹ️', success: '✅', error: '❌' }[type] || 'ℹ️';
-  el.append(i, document.createTextNode(String(msg)));
+  const text = document.createElement('span');
+  text.className = 'toast-msg';
+  text.textContent = String(msg);
+  el.append(i, text);
+  if (opts.action) {
+    const a = document.createElement('button');
+    a.type = 'button';
+    a.className = 'toast-action';
+    a.textContent = opts.action.label;
+    a.addEventListener('click', () => { dismissToast(el); opts.action.onClick(); });
+    el.append(a);
+  }
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'toast-close';
+  close.setAttribute('aria-label', 'Dismiss notification');
+  close.textContent = '✕';
+  close.addEventListener('click', () => dismissToast(el));
+  el.append(close);
+  keepToastsOnTop(true); // visible live region first, so the insertion is announced
   t.appendChild(el);
-  setTimeout(() => el.remove(), 3400);
+  while (t.children.length > MAX_TOASTS) t.firstElementChild.remove();
+  const ms = opts.duration || (opts.action ? 7000 : type === 'error' ? 6000 : 3400);
+  const arm = (d) => { clearTimeout(el._timer); el._timer = setTimeout(() => dismissToast(el), d); };
+  arm(ms);
+  // Don't let a toast vanish while the user is reading or reaching for it.
+  el.addEventListener('mouseenter', () => clearTimeout(el._timer));
+  el.addEventListener('mouseleave', () => arm(2500));
+  el.addEventListener('focusin', () => clearTimeout(el._timer));
+  el.addEventListener('focusout', () => arm(2500));
+}
+
+// Delete with an Undo toast instead of a confirmation prompt.
+function removeWithUndo(path, ids, label, rerender) {
+  const list = () => path.reduce((o, k) => o[k], D());
+  const removed = [];
+  const now = Date.now();
+  for (const id of ids) {
+    const idx = list().findIndex((x) => x.id === id);
+    if (idx < 0) continue;
+    removed.push({ idx, item: JSON.parse(JSON.stringify(list()[idx])) });
+    C.removeItem(D(), path, id, now);
+  }
+  if (!removed.length) return;
+  commitData();
+  rerender();
+  toast(`${label} deleted`, 'info', '🗑️', {
+    action: {
+      label: 'Undo',
+      onClick: () => {
+        const l = list();
+        for (const { idx, item } of removed) {
+          if (l.some((x) => x.id === item.id)) continue;
+          const key = C.tombKey(path, item.id);
+          // Newer than the deletion, so every replica keeps the restored copy.
+          item.updatedAt = Math.max(Date.now(), (D().tombstones[key] || 0) + 1);
+          delete D().tombstones[key];
+          l.splice(Math.min(idx, l.length), 0, item);
+        }
+        commitData();
+        rerender();
+        toast(`${label} restored`, 'success');
+      }
+    }
+  });
 }
 
 function updateStorageBanner() {
@@ -170,8 +283,75 @@ function updateStorageBanner() {
   el.style.display = msg ? 'block' : 'none';
 }
 
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+  const d = document.getElementById(id);
+  if (d && d.open) d.close();
+}
+function openModal(id) {
+  const d = document.getElementById(id);
+  if (!d || d.open) return;
+  // Start clean: no leftover validation messages from a previous attempt.
+  d.querySelectorAll('[aria-invalid="true"]').forEach(clearFieldError);
+  d.showModal();
+  keepToastsOnTop();
+}
+// While a modal dialog is open everything outside it is inert, so toasts
+// (and their Undo buttons) live inside the topmost open dialog, and move back
+// to the page when it closes.
+function keepToastsOnTop(force = false) {
+  const t = document.getElementById('toasts');
+  if (!t) return;
+  const open = [...document.querySelectorAll('dialog.modal[open]')];
+  const host = open.length ? open[open.length - 1] : document.body;
+  if (t.parentElement !== host) host.appendChild(t);
+  if (force || t.children.length) raiseToasts(t);
+}
+
+// Native <dialog>: focus trap, Esc, inert background and focus return come
+// from the browser. Adds light-dismiss where closedby is unsupported, and
+// Enter-to-submit for the dialog's primary action.
+function setupDialogs() {
+  const nativeClosedBy = 'closedBy' in HTMLDialogElement.prototype;
+  document.querySelectorAll('dialog.modal').forEach((d) => {
+    d.addEventListener('close', keepToastsOnTop);
+    if (!nativeClosedBy && d.getAttribute('closedby') === 'any') {
+      d.addEventListener('click', (e) => {
+        if (e.target !== d) return;
+        const r = d.getBoundingClientRect();
+        if (e.clientY < r.top || e.clientY > r.bottom || e.clientX < r.left || e.clientX > r.right) d.close();
+      });
+    }
+    d.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.isComposing) return;
+      const t = e.target;
+      if (!(t instanceof HTMLInputElement) || t.id === 'tagInputField' || ['checkbox', 'radio', 'button', 'file', 'range'].includes(t.type)) return;
+      const primary = [...d.querySelectorAll('.btn-primary')].pop();
+      if (primary) { e.preventDefault(); primary.click(); }
+    });
+  });
+}
+
+// Promise-based replacement for window.confirm().
+function confirmDialog({ title = 'Are you sure?', message = '', confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = false } = {}) {
+  const d = document.getElementById('modalConfirm');
+  if (!d || d.open) return Promise.resolve(false);
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMessage').textContent = message;
+  const ok = document.getElementById('confirmOk');
+  const cancel = document.getElementById('confirmCancel');
+  ok.textContent = confirmLabel;
+  ok.className = 'btn ' + (danger ? 'btn-danger' : 'btn-primary');
+  cancel.textContent = cancelLabel;
+  return new Promise((resolve) => {
+    let result = false;
+    ok.onclick = () => { result = true; d.close(); };
+    cancel.onclick = () => d.close();
+    d.addEventListener('close', () => resolve(result), { once: true });
+    d.showModal();
+    keepToastsOnTop();
+    (danger ? cancel : ok).focus(); // destructive actions default to the safe choice
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Auth & cloud sync UI
@@ -191,6 +371,7 @@ function cloudErrorMessage(code) {
   code = code || '';
   if (code.includes('permission-denied')) return 'Cloud sync blocked by the server (permission denied).';
   if (code.includes('unauthenticated')) return 'Session expired. Please log in again.';
+  if (code === 'zenflow/newer-schema') return 'Your cloud data was saved by a newer version of ZenFlow. Reload the page to update.';
   if (code === 'zenflow/too-large') return 'Your data is too large to sync. Export a backup and remove old items.';
   if (code === 'zenflow/timeout' || code.includes('unavailable') || code.includes('network') || code.includes('deadline')) return 'Offline — changes are saved on this device and will sync when you reconnect.';
   if (code.includes('failed-precondition')) return 'Cloud database is not configured for this app.';
@@ -267,7 +448,7 @@ function updateAuthCorner() {
     btn.classList.remove('auth-on');
     if (dot) dot.style.background = '';
     avatar.textContent = 'Z';
-    txt.textContent = firebaseState === 'connecting' ? 'Login...' : 'Login';
+    txt.textContent = firebaseState === 'connecting' ? 'Connecting…' : 'Log in';
     btn.title = firebaseState === 'unavailable' ? 'Cloud sync is unavailable right now (offline or blocked)' :
       firebaseState === 'connecting' ? 'Connecting to Firebase...' : 'Optional account login';
   }
@@ -304,8 +485,19 @@ function openAuthModal() {
   }
 }
 
+// Shows a spinner on the button and blocks double submission until done.
+async function withBusy(btn, fn) {
+  if (btn && btn.classList.contains('is-busy')) return undefined;
+  if (btn) { btn.classList.add('is-busy'); btn.setAttribute('aria-busy', 'true'); }
+  try {
+    return await fn();
+  } finally {
+    if (btn) { btn.classList.remove('is-busy'); btn.removeAttribute('aria-busy'); }
+  }
+}
+
 function handleAuthPrimary() {
-  return authMode === 'signup' ? handleAuthSignup() : handleAuthLogin();
+  return withBusy(document.getElementById('authPrimaryBtn'), () => (authMode === 'signup' ? handleAuthSignup() : handleAuthLogin()));
 }
 
 function readCredentials() {
@@ -373,17 +565,25 @@ async function handleForgotPassword() {
   setAuthStatusMessage('If an account exists for that email, a password reset link is on its way.');
 }
 
-async function handleAuthLogout() {
+function handleAuthLogout(btn) {
+  return withBusy(btn, logoutFlow);
+}
+async function logoutFlow() {
   if (!isSignedIn()) return;
   const info = document.getElementById('authSyncInfo');
   if (info) info.textContent = 'Saving your latest changes…';
   const ok = await sync.flush(8000);
-  if (!ok && !window.confirm('Your latest changes could not be saved to the cloud (you may be offline).\n\nLog out anyway? Unsynced changes on this device will be lost.')) {
+  if (!ok && !(await confirmDialog({
+    title: 'Log out without syncing?',
+    message: 'Your latest changes could not be saved to the cloud (you may be offline). Unsynced changes on this device will be lost.',
+    confirmLabel: 'Log out anyway', danger: true
+  }))) {
     renderAuthModal();
     return;
   }
   stopRuntimeTimers();
   try {
+    await window.ZenCalendarUI.beforeSignOut(); // unregister this device's push token first
     await sync.signOut();
     toast('Logged out. This device is now in guest mode.', 'info');
   } catch (err) {
@@ -393,18 +593,21 @@ async function handleAuthLogout() {
   closeModal('modalAuth');
 }
 
-async function syncCloudNow() {
-  if (!isSignedIn()) return;
-  const ok = await sync.syncNow();
-  const s = syncSnap();
-  if (ok) toast('Data synced', 'success');
-  else toast(cloudErrorMessage(s.lastError && s.lastError.code), 'error');
+function syncCloudNow(btn) {
+  if (!isSignedIn()) return undefined;
+  return withBusy(btn, async () => {
+    const ok = await sync.syncNow();
+    const s = syncSnap();
+    if (ok) toast('Everything is synced', 'success');
+    else toast(cloudErrorMessage(s.lastError && s.lastError.code), 'error');
+  });
 }
 
 let lastSyncErrorToast = 0;
 function onSyncChange(s) {
   updateAuthCorner();
   renderAuthModal();
+  window.ZenCalendarUI.onSync(s);
   if (s.status === 'error' && Date.now() - lastSyncErrorToast > 60000) {
     lastSyncErrorToast = Date.now();
     toast(cloudErrorMessage(s.lastError && s.lastError.code), 'error');
@@ -417,7 +620,11 @@ function onDataApplied(why) {
 }
 
 function confirmGuestMerge() {
-  return Promise.resolve(window.confirm('This device has ZenFlow data that was created while logged out.\n\nAdd it to your account?\n\nOK = add it to this account\nCancel = keep it on this device only (guest mode)'));
+  return confirmDialog({
+    title: 'Add this device’s data to your account?',
+    message: 'This device has ZenFlow data created while you were logged out. You can add it to this account, or keep it on this device for guest mode.',
+    confirmLabel: 'Add to account', cancelLabel: 'Keep separate'
+  });
 }
 
 function initAuthIntegration() {
@@ -430,9 +637,13 @@ function initAuthIntegration() {
       onChange: onSyncChange, onDataApplied, confirmGuestMerge
     });
     bridge.onAuth((user) => {
+      // Only a signed-in callback consumes the flag (the initial "no user"
+      // callback can arrive after the user already pressed Log In).
       const interactive = pendingInteractive && !!user;
-      pendingInteractive = false;
-      sync.handleAuth(user, { interactive }).catch((err) => log.error('auth handling failed', { code: S.errCode(err) }));
+      if (user) pendingInteractive = false;
+      sync.handleAuth(user, { interactive })
+        .catch((err) => log.error('auth handling failed', { code: S.errCode(err) }))
+        .then(() => window.ZenCalendarUI.onAuth(user));
     });
     updateAuthCorner();
   };
@@ -512,9 +723,30 @@ function showNotification(msg) {
   }
 }
 
+function renderNotifStatus() {
+  const pill = document.getElementById('notifStatus');
+  const btn = document.getElementById('notifBtn');
+  if (!pill || !btn) return;
+  if (!('Notification' in window)) {
+    pill.textContent = 'Not supported';
+    pill.className = 'status-pill';
+    btn.hidden = true;
+    return;
+  }
+  const p = Notification.permission;
+  pill.textContent = p === 'granted' ? 'On' : p === 'denied' ? 'Blocked' : 'Off';
+  pill.className = 'status-pill' + (p === 'granted' ? ' on' : p === 'denied' ? ' blocked' : '');
+  pill.title = p === 'denied' ? "Allow notifications for this site in your browser's settings." : '';
+  btn.hidden = p !== 'default';
+}
+
 function requestNotifications() {
-  if (!('Notification' in window)) return toast('Notifications not supported', 'error');
-  Notification.requestPermission().then((p) => toast(p === 'granted' ? 'Notifications enabled' : 'Permission denied', p === 'granted' ? 'success' : 'error'));
+  if (!('Notification' in window)) return;
+  Notification.requestPermission().then((p) => {
+    renderNotifStatus();
+    if (p === 'granted') toast('Notifications are on', 'success');
+    else if (p === 'denied') toast("Notifications are blocked. You can allow them in your browser's site settings.", 'error');
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -556,7 +788,7 @@ function updatePomoDisplay() {
   ring.style.strokeDashoffset = pomoCirc * (1 - frac);
   ring.setAttribute('class', 'ring-progress ring-' + p.mode);
   document.getElementById('pomoDisplay').textContent = C.formatTime(remaining);
-  const labels = { work: 'FOCUS', 'short-break': 'BREAK', 'long-break': 'LONG BREAK' };
+  const labels = { work: 'Focus', 'short-break': 'Short break', 'long-break': 'Long break' };
   document.getElementById('pomoModeLabel').textContent = labels[p.mode];
   document.getElementById('pomoSession').textContent = `Session ${Math.min(p.session, cfg.sessionsBeforeLong)} of ${cfg.sessionsBeforeLong}`;
   document.getElementById('focusTime').textContent = C.formatTime(remaining);
@@ -567,9 +799,16 @@ function updatePomoDisplay() {
   document.getElementById('pomoPlayIcon').innerHTML = running ? PAUSE_ICON : PLAY_ICON;
   document.getElementById('focusPlayIcon').innerHTML = running ? PAUSE_ICON : PLAY_ICON;
   document.getElementById('pomoBtnMain').className = 'pomo-btn-main ' + (running ? 'pause' : 'play');
+  const actionLabel = running ? 'Pause session' : p.status === 'paused' ? 'Resume session' : 'Start session';
+  ['pomoBtnMain', 'focusBtnMain'].forEach((id) => document.getElementById(id)?.setAttribute('aria-label', actionLabel));
   const tabs = document.querySelectorAll('.pomo-tab');
-  tabs.forEach((t, i) => t.classList.toggle('active', C.POMO_MODES[i] === p.mode));
+  tabs.forEach((t, i) => {
+    const on = C.POMO_MODES[i] === p.mode;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-pressed', String(on));
+  });
   document.querySelectorAll('.pomo-settings .num-btn').forEach((b) => { b.disabled = p.status !== 'idle'; });
+  document.title = running ? `${C.formatTime(remaining)} — ZenFlow` : idleTitle();
   updatePomoDots();
 }
 
@@ -627,12 +866,16 @@ async function finishPomodoro(skipped, late = false) {
   clearHandle('pomoDue');
   let res = null;
   const before = C.lifetimeTotals(D().stats).sessions;
+  // What the user was looking at when they pressed Skip.
+  const seen = { sessionId: RT().pomo.sessionId, mode: RT().pomo.mode, session: RT().pomo.session };
   try {
     res = await withLock('zenflow-pomodoro', () => {
       refreshFromStorage(); // another tab may already have finished this session
       const p = RT().pomo;
       const now = Date.now();
       if (!skipped && !C.pomoIsDue(p, now)) return null;
+      // Another tab changed the phase meanwhile; skipping now would skip the wrong one.
+      if (skipped && (p.sessionId !== seen.sessionId || p.mode !== seen.mode || p.session !== seen.session)) return null;
       const task = (document.getElementById('pomoTask').value || p.task || '').slice(0, C.LIMITS.task);
       const out = C.pomoFinish(D(), p, D().pomo, { now, skipped, task, replica: store.replica });
       store.touchRuntime();
@@ -717,14 +960,25 @@ function logTime(l) {
   return l.at ? new Date(l.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : l.label;
 }
 
+// Consistent empty state: what's here, and what to do next.
+function emptyState(title, hint, compact = false) {
+  return `<div class="empty-state"${compact ? ' style="padding:24px 12px"' : ''}><div class="empty-state-text">${esc(title)}</div><div class="empty-state-sub">${esc(hint)}</div></div>`;
+}
+// Minute resolution for focus totals (never "0s").
+function formatFocus(secs) {
+  const m = Math.round(secs / 60);
+  if (m < 60) return m + 'm';
+  return Math.floor(m / 60) + 'h' + (m % 60 ? ' ' + (m % 60) + 'm' : '');
+}
+
 function renderPomoLog() {
   const el = document.getElementById('pomoLog');
   const list = D().pomo.log;
   if (!list.length) {
-    el.innerHTML = '<div class="empty-state" style="padding:20px"><div class="empty-state-icon">🍅</div><div class="empty-state-sub">Sessions will appear here</div></div>';
+    el.innerHTML = emptyState('No sessions yet', 'Finished sessions show up here.', true);
     return;
   }
-  const names = { work: '🍅 Focus', 'short-break': '☕ Short Break', 'long-break': '🌊 Long Break' };
+  const names = { work: 'Focus', 'short-break': 'Short break', 'long-break': 'Long break' };
   el.innerHTML = list.slice(0, 15).map((l) => `
     <div class="log-entry ${esc(l.type)}">
       <div style="flex:1">
@@ -736,10 +990,7 @@ function renderPomoLog() {
 }
 
 function clearPomoLog() {
-  const now = Date.now();
-  for (const l of [...D().pomo.log]) C.removeItem(D(), ['pomo', 'log'], l.id, now);
-  commitData();
-  renderPomoLog();
+  removeWithUndo(['pomo', 'log'], D().pomo.log.map((l) => l.id), 'Session log', renderPomoLog);
 }
 
 const MILESTONES = [1, 10, 25, 50, 100, 250, 500];
@@ -780,7 +1031,7 @@ function openAddTask(taskId = null) {
   editState.tags = task ? [...task.tags] : [];
   editState.priority = task ? task.priority : 'none';
   editState.pomos = task ? task.pomos : 1;
-  document.getElementById('taskModalTitle').textContent = task ? 'Edit Task' : 'Add Task';
+  document.getElementById('taskModalTitle').textContent = task ? 'Edit task' : 'New task';
   document.getElementById('taskNameInput').value = task ? task.text : '';
   document.getElementById('taskNoteInput').value = task ? task.note : '';
   document.getElementById('taskDueInput').value = task ? task.due : '';
@@ -824,14 +1075,35 @@ function handleTagInput(e) {
 function renderTagInputArea() {
   const area = document.getElementById('tagInputArea');
   const tags = editState.tags.map((t, i) =>
-    `<div class="tag selected" style="background:var(--accent-glow);color:var(--accent2);border-color:var(--accent)" data-action="remove-edit-tag" data-index="${i}">${esc(t)} ✕</div>`
+    `<button type="button" class="tag selected" style="background:var(--accent-glow);color:var(--accent2);border-color:var(--accent)" data-action="remove-edit-tag" data-index="${i}" aria-label="Remove tag ${esc(t)}">${esc(t)} <span aria-hidden="true">✕</span></button>`
   ).join('');
-  area.innerHTML = tags + '<input class="tag-input-field" id="tagInputField" placeholder="Add tags..." onkeydown="handleTagInput(event)">';
+  area.innerHTML = tags + '<input class="tag-input-field" id="tagInputField" placeholder="Add tags… (Enter to add)" enterkeyhint="enter" onkeydown="handleTagInput(event)">';
+}
+
+// Inline, announced validation next to the field that needs fixing.
+function fieldError(input, msg) {
+  clearFieldError(input);
+  const p = document.createElement('p');
+  p.className = 'field-error';
+  p.id = input.id + 'Error';
+  p.setAttribute('role', 'alert');
+  p.textContent = msg;
+  input.insertAdjacentElement('afterend', p);
+  input.setAttribute('aria-invalid', 'true');
+  input.setAttribute('aria-describedby', p.id);
+  input.focus();
+  input.addEventListener('input', () => clearFieldError(input), { once: true });
+}
+function clearFieldError(input) {
+  input.removeAttribute('aria-invalid');
+  input.removeAttribute('aria-describedby');
+  document.getElementById(input.id + 'Error')?.remove();
 }
 
 function saveTask() {
-  const name = document.getElementById('taskNameInput').value.trim().slice(0, C.LIMITS.text);
-  if (!name) { toast('Task name is required', 'error'); return; }
+  const nameInput = document.getElementById('taskNameInput');
+  const name = nameInput.value.trim().slice(0, C.LIMITS.text);
+  if (!name) { fieldError(nameInput, 'Give the task a name.'); return; }
   const d = D(), now = Date.now();
   const due = document.getElementById('taskDueInput').value;
   const listId = document.getElementById('taskListInput').value;
@@ -883,10 +1155,16 @@ function toggleTodo(id) {
 }
 
 function deleteTodo(id) {
-  if (!C.removeItem(D(), ['todos', 'items'], id, Date.now())) return;
-  commitData();
-  renderTodos();
-  renderTodoLists();
+  removeWithUndo(['todos', 'items'], [id], 'Task', () => { renderTodos(); renderTodoLists(); });
+}
+
+function todoMeta(task, dd) {
+  const parts = [];
+  if (dd) parts.push(`<span class="badge ${dd.overdue && !task.completed ? 'badge-red' : 'badge-accent'}">${esc(dd.label)}</span>`);
+  task.tags.forEach((tg) => parts.push(`<span class="badge badge-cyan">${esc(tg)}</span>`));
+  if (task.pomos > 1) parts.push(`<span class="badge badge-orange" title="Estimated sessions">${esc(task.pomos)} sessions</span>`);
+  if (task.subtasks.length) parts.push(`<span class="text-xs">${task.subtasks.filter((s) => s.done).length}/${task.subtasks.length} subtasks</span>`);
+  return parts.length ? `<div class="todo-meta">${parts.join('')}</div>` : '';
 }
 
 function startPomoForTask(id) {
@@ -921,39 +1199,40 @@ function renderTodos() {
   if (sort === 'priority') { const ord = { high: 0, medium: 1, low: 2, none: 3 }; items.sort((a, b) => ord[a.priority] - ord[b.priority]); }
   else if (sort === 'due') items.sort((a, b) => (a.due ? (b.due ? a.due.localeCompare(b.due) : -1) : b.due ? 1 : 0));
   else if (sort === 'name') items.sort((a, b) => a.text.localeCompare(b.text));
-  document.querySelectorAll('#todoFilters .chip').forEach((c) => c.classList.toggle('active', !pf.activeTag && c.dataset.filter === pf.activeFilter));
+  document.querySelectorAll('#todoFilters .chip').forEach((c) => {
+    const on = !pf.activeTag && c.dataset.filter === pf.activeFilter;
+    c.classList.toggle('active', on);
+    c.setAttribute('aria-pressed', String(on));
+  });
   if (!items.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">No tasks here</div><div class="empty-state-sub">' +
-      (pf.activeTag ? `Showing tag “${esc(pf.activeTag)}” — click it again to clear` : 'Add a task to get started') + '</div></div>';
+    el.innerHTML = !D().todos.items.length ? emptyState('No tasks yet', 'Type a task above and press Enter.')
+      : pf.activeTag ? emptyState(`No tasks tagged “${pf.activeTag}”`, 'Select the tag again to clear the filter.')
+      : emptyState('Nothing here', 'No tasks match this list and filter.');
     return;
   }
   const prioCols = { high: 'var(--red)', medium: 'var(--orange)', low: 'var(--green)', none: 'var(--surface2)' };
   el.innerHTML = items.map((task) => {
     const dd = due(task);
     const id = esc(task.id);
+    const text = esc(task.text);
     return `
-    <div class="todo-item ${task.completed ? 'completed' : ''}">
+    <div class="todo-item ${task.completed ? 'completed' : ''}" role="listitem">
       <div class="todo-priority" style="background:${prioCols[task.priority]}"></div>
-      <div class="todo-checkbox ${task.completed ? 'checked' : ''}" data-action="toggle-todo" data-id="${id}">
-        <svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"/></svg>
-      </div>
+      <button type="button" class="todo-checkbox ${task.completed ? 'checked' : ''}" data-action="toggle-todo" data-id="${id}" aria-pressed="${task.completed}" aria-label="Done: ${text}">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><polyline points="20,6 9,17 4,12"/></svg>
+      </button>
       <div class="todo-content">
-        <div class="todo-text">${esc(task.text)}</div>
+        <div class="todo-text">${text}</div>
         ${task.note ? `<div class="todo-note">${esc(task.note)}</div>` : ''}
-        <div class="todo-meta">
-          ${dd ? `<span class="badge ${dd.overdue && !task.completed ? 'badge-red' : 'badge-accent'}">${esc(dd.label)}</span>` : ''}
-          ${task.tags.map((tg) => `<span class="badge badge-cyan">${esc(tg)}</span>`).join('')}
-          ${task.pomos > 1 ? `<span class="badge badge-orange">🍅 ×${esc(task.pomos)}</span>` : ''}
-          ${task.subtasks.length ? `<span class="text-xs">${task.subtasks.filter((s) => s.done).length}/${task.subtasks.length} subtasks</span>` : ''}
-        </div>
+        ${todoMeta(task, dd)}
       </div>
       <div class="todo-actions">
-        <button class="btn btn-icon btn-ghost" data-action="edit-todo" data-id="${id}" title="Edit">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <button type="button" class="btn btn-icon btn-ghost" data-action="edit-todo" data-id="${id}" title="Edit" aria-label="Edit: ${text}">
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
-        <button class="btn btn-icon btn-ghost" data-action="pomo-todo" data-id="${id}" title="Start Pomodoro">🍅</button>
-        <button class="btn btn-icon btn-danger" data-action="delete-todo" data-id="${id}" title="Delete">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        <button type="button" class="btn btn-icon btn-ghost" data-action="pomo-todo" data-id="${id}" title="Focus on this task" aria-label="Focus on: ${text}"><span aria-hidden="true">🍅</span></button>
+        <button type="button" class="btn btn-icon btn-danger" data-action="delete-todo" data-id="${id}" title="Delete" aria-label="Delete: ${text}">
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
         </button>
       </div>
     </div>`;
@@ -964,21 +1243,25 @@ function renderTodoLists() {
   const t = D().todos, pf = PF();
   const el = document.getElementById('todoListsSidebar');
   const open = t.items.filter((i) => !i.completed);
-  const lists = [{ id: 'all', name: 'All Tasks', color: 'var(--text2)' }, ...t.lists];
+  const lists = [{ id: 'all', name: 'All tasks', color: 'var(--text2)' }, ...t.lists];
   el.innerHTML = lists.map((l) => {
     const count = l.id === 'all' ? open.length : open.filter((i) => i.listId === l.id).length;
-    return `<div class="todo-list-item ${pf.activeList === l.id ? 'active' : ''}" data-action="select-list" data-id="${esc(l.id)}">
+    return `<button type="button" class="todo-list-item ${pf.activeList === l.id ? 'active' : ''}" aria-pressed="${pf.activeList === l.id}" data-action="select-list" data-id="${esc(l.id)}">
       <span style="display:flex;align-items:center;gap:8px">
         <span style="width:8px;height:8px;border-radius:50%;background:${esc(l.color)};flex-shrink:0"></span>
         ${esc(l.name)}
       </span>
-      <span class="todo-list-count">${count}</span>
-    </div>`;
+      <span class="todo-list-count" aria-label="${count} open">${count}</span>
+    </button>`;
   }).join('');
   const allTags = [...new Set(t.items.flatMap((i) => i.tags))];
-  document.getElementById('todoTagsSidebar').innerHTML = allTags.map((tg) =>
-    `<div class="tag${pf.activeTag === tg ? ' selected' : ''}" style="background:var(--cyan-dim);color:var(--cyan)${pf.activeTag === tg ? ';outline:1px solid var(--cyan)' : ''}" data-action="filter-tag" data-tag="${esc(tg)}">${esc(tg)}</div>`
+  const tagsEl = document.getElementById('todoTagsSidebar');
+  tagsEl.innerHTML = allTags.map((tg) =>
+    `<button type="button" class="tag${pf.activeTag === tg ? ' selected' : ''}" style="background:var(--cyan-dim);color:var(--cyan)${pf.activeTag === tg ? ';outline:1px solid var(--cyan)' : ''}" aria-pressed="${pf.activeTag === tg}" data-action="filter-tag" data-tag="${esc(tg)}">${esc(tg)}</button>`
   ).join('');
+  // No tags yet: hide the empty section instead of showing a bare heading.
+  tagsEl.style.display = allTags.length ? 'flex' : 'none';
+  document.getElementById('tagsLabel').hidden = !allTags.length;
 }
 
 function selectList(id) {
@@ -1008,12 +1291,14 @@ function filterByTag(tag) {
 function openNewList() { openModal('modalNewList'); }
 function selectListColor(c, el) {
   editState.newListColor = c;
-  document.querySelectorAll('#modalNewList .color-opt').forEach((o) => o.classList.remove('selected'));
+  document.querySelectorAll('#modalNewList .color-opt').forEach((o) => { o.classList.remove('selected'); o.setAttribute('aria-pressed', 'false'); });
   el.classList.add('selected');
+  el.setAttribute('aria-pressed', 'true');
 }
 function saveNewList() {
-  const name = document.getElementById('newListName').value.trim().slice(0, C.LIMITS.name);
-  if (!name) { toast('List name is required', 'error'); return; }
+  const nameInput = document.getElementById('newListName');
+  const name = nameInput.value.trim().slice(0, C.LIMITS.name);
+  if (!name) { fieldError(nameInput, 'Give the list a name.'); return; }
   const now = Date.now();
   D().todos.lists.push({ id: C.newId('l'), name, color: editState.newListColor, createdAt: now, updatedAt: now });
   closeModal('modalNewList');
@@ -1030,9 +1315,9 @@ function readTimerInputs() {
   return v('timerH', 23) * 3600 + v('timerM', 59) * 60 + v('timerS', 59);
 }
 function writeTimerInputs(total) {
-  document.getElementById('timerH').value = Math.floor(total / 3600);
-  document.getElementById('timerM').value = Math.floor((total % 3600) / 60);
-  document.getElementById('timerS').value = total % 60;
+  document.getElementById('timerH').value = C.pad(Math.floor(total / 3600));
+  document.getElementById('timerM').value = C.pad(Math.floor((total % 3600) / 60));
+  document.getElementById('timerS').value = C.pad(total % 60);
 }
 
 function renderTimer() {
@@ -1041,13 +1326,19 @@ function renderTimer() {
   const display = document.getElementById('timerDisplay');
   display.textContent = C.formatHMS(t.status === 'idle' ? t.total : remaining);
   display.className = 'timer-time-big' + (t.status === 'running' ? ' running' : t.status === 'done' ? ' done' : '');
+  document.getElementById('timerCard').dataset.state = t.status;
   document.getElementById('timerLabel').textContent =
-    t.status === 'running' ? 'COUNTING DOWN' : t.status === 'paused' ? 'PAUSED' : t.status === 'done' ? "TIME'S UP!" : 'SET YOUR TIMER';
+    t.status === 'running' ? 'Counting down' : t.status === 'paused' ? 'Paused' : t.status === 'done' ? "Time's up" : 'Set a duration';
+  // Offer only the actions that make sense in this state.
+  document.getElementById('timerResetBtn').hidden = t.status === 'idle';
+  document.getElementById('timerLapBtn').hidden = t.status !== 'running';
   const label = t.status === 'running' ? 'Pause' : t.status === 'paused' ? 'Resume' : 'Start';
   const icon = t.status === 'running'
     ? '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'
     : '<polygon points="5,3 19,12 5,21"/>';
-  document.getElementById('timerStartBtn').innerHTML = `<svg viewBox="0 0 24 24" fill="white" style="width:16px;height:16px">${icon}</svg> ${label}`;
+  document.getElementById('timerStartBtn').innerHTML = `<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor">${icon}</svg> ${t.status === 'done' ? 'Restart' : label}`;
+  const locked = t.status === 'running' || t.status === 'paused';
+  ['timerH', 'timerM', 'timerS'].forEach((id) => { document.getElementById(id).disabled = locked; });
   document.getElementById('timerLaps').innerHTML = t.laps.map((lap, i) =>
     `<div class="lap-item"><span class="lap-num">#${i + 1}</span><span class="lap-time">${C.formatHMS(lap)}</span></div>`).reverse().join('');
 }
@@ -1134,14 +1425,14 @@ function renderTimerPresets() {
   const el = document.getElementById('timerPresetList');
   const active = RT().timer.activePreset;
   el.innerHTML = D().timer.presets.map((p) => `
-    <div class="preset-item ${active === p.id ? 'active' : ''}" data-action="apply-preset" data-id="${esc(p.id)}">
-      <div><div class="preset-name">${esc(p.name)}</div></div>
-      <div class="flex-row" style="gap:8px;align-items:center">
+    <div class="preset-item ${active === p.id ? 'active' : ''}">
+      <button type="button" class="preset-apply" data-action="apply-preset" data-id="${esc(p.id)}" aria-pressed="${active === p.id}">
+        <span class="preset-name">${esc(p.name)}</span>
         <span class="preset-duration">${C.formatHMS(p.h * 3600 + p.m * 60 + p.s)}</span>
-        <button class="btn btn-icon btn-ghost" data-action="delete-preset" data-id="${esc(p.id)}" style="width:24px;height:24px" title="Delete preset">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
+      </button>
+      <button type="button" class="btn btn-icon btn-ghost" data-action="delete-preset" data-id="${esc(p.id)}" style="width:28px;height:28px" title="Delete preset" aria-label="Delete preset ${esc(p.name)}">
+        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>`).join('');
   renderRecentTimers();
 }
@@ -1159,19 +1450,18 @@ function applyPreset(id) {
 }
 
 function deletePreset(id) {
-  if (!C.removeItem(D(), ['timer', 'presets'], id, Date.now())) return;
-  commitData();
-  renderTimerPresets();
+  removeWithUndo(['timer', 'presets'], [id], 'Preset', renderTimerPresets);
 }
 
 function openAddPreset() { openModal('modalAddPreset'); }
 function savePreset() {
-  const name = document.getElementById('presetName').value.trim().slice(0, C.LIMITS.name);
-  if (!name) { toast('Name required', 'error'); return; }
+  const nameInput = document.getElementById('presetName');
+  const name = nameInput.value.trim().slice(0, C.LIMITS.name);
+  if (!name) { fieldError(nameInput, 'Give the preset a name.'); return; }
   const v = (id, max) => Math.max(0, Math.min(max, parseInt(document.getElementById(id).value, 10) || 0));
   const now = Date.now();
   const preset = { id: C.newId('pr'), name, h: v('presetH', 23), m: v('presetM', 59), s: v('presetS', 59), createdAt: now, updatedAt: now };
-  if (preset.h + preset.m + preset.s === 0) { toast('Preset duration must be longer than 0', 'error'); return; }
+  if (preset.h + preset.m + preset.s === 0) { fieldError(document.getElementById('presetM'), 'Set a duration longer than zero.'); return; }
   D().timer.presets.push(preset);
   closeModal('modalAddPreset');
   commitData();
@@ -1182,10 +1472,10 @@ function renderRecentTimers() {
   const el = document.getElementById('recentTimers');
   if (!el) return;
   el.innerHTML = D().timer.recent.map((r) => `
-    <div class="flex-row justify-between align-center" style="padding:8px 12px;background:var(--bg3);border-radius:8px;cursor:pointer" data-action="apply-recent" data-total="${esc(r.total)}">
+    <button type="button" class="recent-timer flex-row justify-between align-center" style="padding:8px 12px;background:var(--bg3);border-radius:8px" data-action="apply-recent" data-total="${esc(r.total)}" aria-label="Use recent timer ${C.formatHMS(r.total)}">
       <span class="text-mono text-sm">${C.formatHMS(r.total)}</span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--text3)"><polygon points="5,3 19,12 5,21"/></svg>
-    </div>`).join('');
+      <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--text3)"><polygon points="5,3 19,12 5,21"/></svg>
+    </button>`).join('');
 }
 
 function applyRecent(total) {
@@ -1209,7 +1499,7 @@ function renderStopwatch() {
   const btn = document.getElementById('swStartBtn');
   const label = running ? 'Pause' : sw.status === 'paused' ? 'Resume' : 'Start';
   const icon = running ? '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>' : '<polygon points="5,3 19,12 5,21"/>';
-  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="white" style="width:18px;height:18px">${icon}</svg> ${label}`;
+  btn.innerHTML = `<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor">${icon}</svg> ${label}`;
   btn.className = 'btn btn-xl ' + (running ? 'btn-danger' : sw.status === 'paused' ? 'btn-success' : 'btn-primary');
   document.getElementById('swLapBtn').disabled = !running;
   document.getElementById('swResetBtn').disabled = sw.status === 'idle';
@@ -1244,9 +1534,9 @@ function addLap() {
 function renderLaps() {
   const sw = RT().sw;
   const el = document.getElementById('lapsList');
-  document.getElementById('lapCount').textContent = sw.laps.length + ' laps';
+  document.getElementById('lapCount').textContent = sw.laps.length === 1 ? '1 lap' : sw.laps.length + ' laps';
   if (!sw.laps.length) {
-    el.innerHTML = '<div class="empty-state" style="padding:24px"><div class="empty-state-icon">⏱️</div><div class="empty-state-sub">Lap times will appear here</div></div>';
+    el.innerHTML = emptyState('No laps yet', 'Press Lap while the stopwatch is running.', true);
     return;
   }
   const times = sw.laps.map((l) => l.lap);
@@ -1277,7 +1567,7 @@ function renderTracker() {
   const running = tr.status === 'running';
   const btn = document.getElementById('trackerBtn');
   const icon = running ? '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>' : '<polygon points="5,3 19,12 5,21"/>';
-  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px">${icon}</svg> ${running ? 'Stop' : 'Start'}`;
+  btn.innerHTML = `<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px">${icon}</svg> ${running ? 'Stop' : 'Start'}`;
   btn.className = 'btn ' + (running ? 'btn-danger' : 'btn-success');
   document.getElementById('trackerPulse').classList.toggle('active', running);
   const timerEl = document.getElementById('trackerTimer');
@@ -1316,7 +1606,11 @@ function renderTrackingPage() {
   renderTrackingSummary();
   renderProjectsList();
   populateProjectDropdowns();
-  document.querySelectorAll('#page-tracking .chip').forEach((c) => c.classList.toggle('active', c.dataset.filter === PF().trackingFilter));
+  document.querySelectorAll('#page-tracking .chip').forEach((c) => {
+    const on = c.dataset.filter === PF().trackingFilter;
+    c.classList.toggle('active', on);
+    c.setAttribute('aria-pressed', String(on));
+  });
 }
 
 function projectById(id) {
@@ -1331,7 +1625,9 @@ function renderTrackingEntries() {
   if (filter === 'today') entries = entries.filter((e) => C.localDayKey(e.start) === today);
   else if (filter === 'week') { const from = Date.now() - 7 * 86400000; entries = entries.filter((e) => e.start >= from); }
   if (!entries.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏱️</div><div class="empty-state-text">No time entries</div><div class="empty-state-sub">Start the tracker or add a manual entry</div></div>';
+    el.innerHTML = D().tracking.entries.length
+      ? emptyState(filter === 'today' ? 'Nothing logged today' : 'Nothing logged in the last 7 days', 'Start the tracker above or add an entry.')
+      : emptyState('No time logged yet', 'Start the tracker above, or add an entry for time you already spent.');
     return;
   }
   const byDay = new Map();
@@ -1354,7 +1650,7 @@ function renderTrackingEntries() {
         <div class="entry-time">${hm(e.start)} – ${hm(e.end)}</div>
         <div class="entry-duration">${C.formatDuration(e.duration)}</div>
         <div class="entry-actions">
-          <button class="btn btn-icon btn-danger" data-action="delete-entry" data-id="${esc(e.id)}" title="Delete entry">✕</button>
+          <button type="button" class="btn btn-icon btn-danger" data-action="delete-entry" data-id="${esc(e.id)}" title="Delete entry" aria-label="Delete entry: ${esc(e.desc || 'Untitled')}">✕</button>
         </div>
       </div>`;
     }).join('');
@@ -1362,9 +1658,7 @@ function renderTrackingEntries() {
 }
 
 function deleteEntry(id) {
-  if (!C.removeItem(D(), ['tracking', 'entries'], id, Date.now())) return;
-  commitData();
-  renderTrackingPage();
+  removeWithUndo(['tracking', 'entries'], [id], 'Time entry', renderTrackingPage);
 }
 
 function renderTrackingSummary() {
@@ -1389,7 +1683,7 @@ function renderTrackingSummary() {
     return `<div class="flex-row justify-between align-center mb-8">
       <div class="flex-row align-center" style="gap:8px">
         <div class="proj-dot-${color}" style="width:8px;height:8px;border-radius:50%"></div>
-        <span class="text-sm">${proj ? esc(proj.name) : 'No Project'}</span>
+        <span class="text-sm">${proj ? esc(proj.name) : 'No project'}</span>
       </div>
       <span class="text-mono text-xs">${C.formatDuration(dur)}</span>
     </div>
@@ -1404,12 +1698,12 @@ function renderProjectsList() {
         <div style="width:10px;height:10px;border-radius:50%;background:${C.PROJECT_COLORS[p.color]}"></div>
         <span class="text-sm">${esc(p.name)}</span>
       </div>
-      <button class="btn btn-icon btn-ghost" data-action="delete-project" data-id="${esc(p.id)}" style="width:24px;height:24px" title="Delete project">✕</button>
+      <button type="button" class="btn btn-icon btn-ghost" data-action="delete-project" data-id="${esc(p.id)}" style="width:28px;height:28px" title="Delete project" aria-label="Delete project ${esc(p.name)}">✕</button>
     </div>`).join('');
 }
 
 function populateProjectDropdowns() {
-  const opts = '<option value="">No Project</option>' + D().tracking.projects.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+  const opts = '<option value="">No project</option>' + D().tracking.projects.map((p) => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
   ['trackerProject', 'manualProject'].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1421,8 +1715,9 @@ function populateProjectDropdowns() {
 
 function openAddProject() { openModal('modalAddProject'); }
 function saveProject() {
-  const name = document.getElementById('projectName').value.trim().slice(0, C.LIMITS.name);
-  if (!name) { toast('Name required', 'error'); return; }
+  const nameInput = document.getElementById('projectName');
+  const name = nameInput.value.trim().slice(0, C.LIMITS.name);
+  if (!name) { fieldError(nameInput, 'Give the project a name.'); return; }
   const now = Date.now();
   const used = new Set(D().tracking.projects.map((p) => p.color));
   const color = [0, 1, 2, 3, 4, 5, 6, 7].find((c) => !used.has(c)) ?? D().tracking.projects.length % 8;
@@ -1433,9 +1728,7 @@ function saveProject() {
   renderTrackingPage();
 }
 function deleteProject(id) {
-  if (!C.removeItem(D(), ['tracking', 'projects'], id, Date.now())) return;
-  commitData();
-  renderTrackingPage();
+  removeWithUndo(['tracking', 'projects'], [id], 'Project', renderTrackingPage);
 }
 
 function filterTracking(f) {
@@ -1459,15 +1752,20 @@ function saveManualEntry() {
   const startTime = document.getElementById('manualStart').value;
   const endTime = document.getElementById('manualEnd').value;
   const date = document.getElementById('manualDate').value;
-  if (!startTime || !endTime || !C.parseDayKey(date)) { toast('Fill in all fields', 'error'); return; }
+  if (!C.parseDayKey(date)) { fieldError(document.getElementById('manualDate'), 'Choose a date.'); return; }
+  if (!startTime) { fieldError(document.getElementById('manualStart'), 'Enter a start time.'); return; }
+  if (!endTime) { fieldError(document.getElementById('manualEnd'), 'Enter an end time.'); return; }
   // "YYYY-MM-DDTHH:MM" without a zone is parsed as local time.
   const start = new Date(date + 'T' + startTime).getTime();
   const end = new Date(date + 'T' + endTime).getTime();
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) { toast('End time must be after start time', 'error'); return; }
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+    fieldError(document.getElementById('manualEnd'), 'End must be after start. For time past midnight, add a second entry for the next day.');
+    return;
+  }
   const project = document.getElementById('manualProject').value;
   const now = Date.now();
   D().tracking.entries.unshift({
-    id: C.newId('e'), desc: desc || 'Manual Entry', project: projectById(project) ? project : '', tag: 'none',
+    id: C.newId('e'), desc: desc || 'Untitled', project: projectById(project) ? project : '', tag: 'none',
     start, end, duration: Math.round((end - start) / 1000), updatedAt: now
   });
   D().tracking.entries.sort((a, b) => b.start - a.start);
@@ -1475,14 +1773,14 @@ function saveManualEntry() {
   document.getElementById('manualDesc').value = '';
   commitData();
   renderTrackingPage();
-  toast('Entry added', 'success');
+  toast('Time entry added', 'success');
 }
 
 // ---------------------------------------------------------------------------
 // Analytics / forest
 // ---------------------------------------------------------------------------
-const TREES = ['🌱', '🌿', '🌲', '🌳', '🎄', '🌴', '🌵', '🎋', '🍀', '🎍'];
-const DEAD_TREES = ['🪵', '🍂', '🍃'];
+// Tree grows with session length; skipped sessions wither.
+const treeFor = (mins) => (mins >= 60 ? '🌲' : mins >= 25 ? '🌳' : mins >= 10 ? '🌿' : '🌱');
 const minsOf = (secs) => Math.round(secs / 60);
 
 function dayKeysBack(n) {
@@ -1508,15 +1806,16 @@ function renderAnalyticsStats() {
   const activeDays = Object.keys(stats.daily).filter((k) => C.dayTotals(stats, k).secs > 0).length;
   const life = C.lifetimeTotals(stats);
   const items = D().todos.items;
+  const n = (k, word) => `${k} ${word}${k === 1 ? '' : 's'}`;
   document.getElementById('analyticsStats').innerHTML = [
-    { label: "Today's Focus", value: C.formatDuration(today.secs), sub: `${today.sessions} sessions`, color: 'var(--accent)' },
-    { label: 'This Week', value: C.formatDuration(weekSecs), sub: `${activeDays} active days`, color: 'var(--green)' },
-    { label: 'Total Sessions', value: String(life.sessions), sub: `${C.formatDuration(life.focusSecs)} focused`, color: 'var(--orange)' },
-    { label: 'Tasks Done', value: String(items.filter((t) => t.completed).length), sub: `${items.length} total`, color: 'var(--cyan)' }
-  ].map((s) => `<div class="stat-card" style="border-left:3px solid ${s.color}">
-    <div class="stat-value" style="color:${s.color}">${esc(s.value)}</div>
-    <div class="stat-label">${esc(s.label)}</div>
-    <div class="text-xs">${esc(s.sub)}</div>
+    { label: 'Today', value: formatFocus(today.secs), sub: n(today.sessions, 'session'), primary: true },
+    { label: 'Last 7 days', value: formatFocus(weekSecs), sub: `${n(activeDays, 'active day')} overall` },
+    { label: 'Sessions', value: String(life.sessions), sub: `${formatFocus(life.focusSecs)} of focus` },
+    { label: 'Tasks done', value: String(items.filter((t) => t.completed).length), sub: `of ${items.length}` }
+  ].map((c) => `<div class="stat-card${c.primary ? ' is-primary' : ''}">
+    <div class="stat-label">${esc(c.label)}</div>
+    <div class="stat-value">${esc(c.value)}</div>
+    <div class="stat-sub">${esc(c.sub)}</div>
   </div>`).join('');
 }
 
@@ -1525,14 +1824,14 @@ function renderGarden() {
   const el = document.getElementById('gardenGrid');
   document.getElementById('gardenCount').textContent = garden.filter((g) => !g.abandoned).length + ' trees';
   if (!garden.length) {
-    el.innerHTML = '<div class="text-xs" style="color:var(--text3);grid-column:1/-1;padding:20px;text-align:center">Complete focus sessions to grow your garden 🌱</div>';
+    el.innerHTML = `<div style="grid-column:1/-1">${emptyState('Your garden is empty', 'Finish a focus session to plant your first tree.', true)}</div>`;
     return;
   }
-  el.innerHTML = [...garden].reverse().slice(0, 60).map((g, i) => {
-    const emoji = g.abandoned ? DEAD_TREES[i % DEAD_TREES.length] : TREES[Math.min(Math.floor(g.mins / 5), TREES.length - 1)];
+  el.innerHTML = [...garden].reverse().slice(0, 60).map((g) => {
+    const emoji = g.abandoned ? '🍂' : treeFor(g.mins);
     const when = g.at ? new Date(g.at).toLocaleDateString() : '';
-    return `<div class="tree-item ${g.abandoned ? 'tree-dead' : ''}" title="${esc(g.task || 'Focus session')} · ${Math.round(g.mins)}m · ${esc(when)}">
-      <div class="tree-emoji">${emoji}</div>
+    return `<div class="tree-item ${g.abandoned ? 'tree-dead' : ''}" title="${esc(g.task || 'Focus session')} · ${Math.round(g.mins)}m · ${esc(when)}${g.abandoned ? ' · skipped' : ''}">
+      <div class="tree-emoji" aria-hidden="true">${emoji}</div>
       <div class="tree-mins">${Math.round(g.mins)}m</div>
     </div>`;
   }).join('');
@@ -1542,7 +1841,7 @@ function renderStreak() {
   const stats = D().stats;
   const { current, longest } = C.computeStreak(stats, Date.now());
   document.getElementById('streakNum').textContent = current;
-  document.getElementById('streakSub').textContent = current > 0 ? `${current} day${current !== 1 ? 's' : ''} in a row!` : 'Start a session today!';
+  document.getElementById('streakSub').textContent = current > 0 ? 'Keep it going today.' : 'Focus today to start a streak.';
   document.getElementById('longestStreak').textContent = `Longest: ${longest} day${longest !== 1 ? 's' : ''}`;
   const today = C.parseDayKey(C.localDayKey());
   const todayIdx = today.getDay();
@@ -1550,11 +1849,11 @@ function renderStreak() {
   document.getElementById('weekGrid').innerHTML = names.map((name, i) => {
     const date = C.addDays(today, i - todayIdx);
     const mins = minsOf(C.dayTotals(stats, C.localDayKey(date)).secs);
-    return `<div class="week-day ${i === todayIdx ? 'today' : ''}">
+    return `<div class="week-day ${i === todayIdx ? 'today' : i > todayIdx ? 'future' : ''}">
       <div class="week-day-label">${name}</div>
       <div class="week-day-num">${date.getDate()}</div>
       <div class="week-day-bar" title="${mins}m focused">
-        <div class="week-day-fill" style="height:${Math.min(100, Math.round((mins / 120) * 100))}%;background:var(--accent);opacity:0.8"></div>
+        <div class="week-day-fill" style="height:${Math.min(100, Math.round((mins / 120) * 100))}%;background:var(--accent)"></div>
       </div>
       <div class="week-day-val">${mins ? mins + 'm' : ''}</div>
     </div>`;
@@ -1581,12 +1880,13 @@ function renderHeatmap() {
   const monthEl = document.getElementById('heatmapMonths');
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   monthEl.style.cssText = 'display:flex;gap:0;margin-bottom:4px;font-size:10px;color:var(--text3);';
-  const seen = new Set();
-  monthEl.innerHTML = cells.filter((_, i) => i % 7 === 0).map((c) => {
+  // One label per month, skipped when it would crowd the previous one.
+  let lastMonth = -1, lastCol = -10;
+  monthEl.innerHTML = cells.filter((_, i) => i % 7 === 0).map((c, col) => {
     const m = c.d.getMonth();
-    const label = seen.has(m) ? '' : months[m];
-    seen.add(m);
-    return `<span style="flex:1;min-width:0">${label}</span>`;
+    let label = '';
+    if (m !== lastMonth) { lastMonth = m; if (col - lastCol >= 3) { label = months[m]; lastCol = col; } }
+    return `<span style="flex:1;min-width:0;white-space:nowrap">${label}</span>`;
   }).join('');
 }
 
@@ -1602,7 +1902,7 @@ function renderWeekBar() {
     <div class="bar-col">
       <div class="bar-val">${d.mins ? d.mins + 'm' : ''}</div>
       <div class="bar-wrap">
-        <div class="bar" style="height:${Math.max(4, (d.mins / maxMins) * 140)}px;background:${d.isToday ? 'var(--accent)' : 'var(--surface2)'}" title="${d.label}: ${d.mins}m"></div>
+        <div class="bar" style="height:${Math.max(4, (d.mins / maxMins) * 140)}px;background:${d.isToday ? 'var(--accent)' : 'color-mix(in srgb, var(--accent) 35%, var(--surface-3))'}" title="${d.label}: ${d.mins}m"></div>
       </div>
       <div class="bar-label" style="${d.isToday ? 'color:var(--accent2)' : ''}">${d.label}</div>
     </div>`).join('');
@@ -1615,9 +1915,9 @@ function renderFocusScore() {
   const streak = C.computeStreak(stats, Date.now()).current;
   const parts = [
     { label: 'Sessions', val: Math.min(40, (life.sessions / 10) * 40), max: 40, color: 'var(--accent)' },
-    { label: "Today's focus", val: Math.min(30, (todayMins / 120) * 30), max: 30, color: 'var(--green)' },
-    { label: 'Tasks done', val: Math.min(20, (D().todos.items.filter((t) => t.completed).length / 5) * 20), max: 20, color: 'var(--orange)' },
-    { label: 'Streak bonus', val: Math.min(10, streak * 2), max: 10, color: 'var(--cyan)' }
+    { label: "Today's focus", val: Math.min(30, (todayMins / 120) * 30), max: 30, color: 'var(--accent)' },
+    { label: 'Tasks done', val: Math.min(20, (D().todos.items.filter((t) => t.completed).length / 5) * 20), max: 20, color: 'var(--accent)' },
+    { label: 'Streak bonus', val: Math.min(10, streak * 2), max: 10, color: 'var(--accent)' }
   ];
   const total = Math.round(parts.reduce((a, p) => a + p.val, 0));
   document.getElementById('focusScoreNum').textContent = total;
@@ -1665,14 +1965,13 @@ function renderProductivityReport() {
   const totalFocus = days.reduce((a, [, s]) => a + s, 0);
   const tracked = d.tracking.entries.reduce((a, e) => a + e.duration, 0);
   const best = days.sort((a, b) => b[1] - a[1])[0];
-  const card = (label, value, size) => `<div style="background:var(--bg3);border-radius:10px;padding:14px">
-    <div class="text-xs text-mono" style="color:var(--text3)">${label}</div>
-    <div class="stat-value text-mono mt-4" style="font-size:${size}px">${esc(value)}</div></div>`;
-  document.getElementById('productivityReport').innerHTML = `<div class="grid-4" style="gap:12px;margin-bottom:16px">
-    ${card('TOTAL FOCUS TIME', C.formatDuration(totalFocus), 22)}
-    ${card('TRACKED TIME', C.formatDuration(tracked), 22)}
-    ${card('ACTIVE DAYS', String(days.length), 22)}
-    ${card('BEST DAY', best ? best[0].slice(5) + '·' + minsOf(best[1]) + 'm' : '—', 16)}
+  const cell = (label, value) => `<div class="report-cell"><div class="report-cell-label">${label}</div><div class="report-cell-value">${esc(value)}</div></div>`;
+  const bestLabel = best ? `${C.parseDayKey(best[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${formatFocus(best[1])}` : '—';
+  document.getElementById('productivityReport').innerHTML = `<div class="report-grid">
+    ${cell('Focus time', formatFocus(totalFocus))}
+    ${cell('Tracked time', formatFocus(tracked))}
+    ${cell('Active days', String(days.length))}
+    ${cell('Best day', bestLabel)}
   </div>`;
 }
 
@@ -1691,45 +1990,84 @@ function exportReport() {
 // ---------------------------------------------------------------------------
 // Settings
 // ---------------------------------------------------------------------------
-function hexToRgba(hex, a) {
-  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${a})`;
+// Accent tokens are derived per theme so text on/with the accent always
+// meets WCAG AA (4.5:1), whichever of the accent colours is chosen.
+const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const rgbHex = (c) => '#' + c.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+const mixRgb = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+function luminance(c) {
+  const [r, g, b] = c.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
-function applyAccent(c, c2) {
-  document.documentElement.style.setProperty('--accent', c);
-  document.documentElement.style.setProperty('--accent2', c2);
-  document.documentElement.style.setProperty('--accent-glow', hexToRgba(c, 0.2));
+const contrastRatio = (a, b) => { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+const WHITE = [255, 255, 255], INK = [11, 11, 16], BLACK = [0, 0, 0];
+function accentTokens(hex, theme) {
+  const acc = hexRgb(hex);
+  // Button fill + label: prefer white on a slightly deepened accent; fall back
+  // to dark ink on the accent itself (bright greens, cyans, ambers).
+  let solid = acc, on = INK;
+  for (let t = 0; t <= 0.2 + 1e-9; t += 0.02) {
+    const c = mixRgb(acc, BLACK, t);
+    if (contrastRatio(WHITE, c) >= 4.5) { solid = c; on = WHITE; break; }
+  }
+  const strong = mixRgb(solid, on === WHITE ? BLACK : WHITE, 0.12);
+  // Accent used as text on the theme's inset surfaces.
+  const surface = theme === 'light' ? [238, 241, 248] : theme === 'glass' ? [48, 40, 79] : [32, 32, 43];
+  const toward = theme === 'light' ? BLACK : WHITE;
+  let text = acc;
+  for (let t = 0; t <= 0.8 && contrastRatio(text, surface) < 4.5; t += 0.04) text = mixRgb(acc, toward, t);
+  return { solid: rgbHex(solid), on: rgbHex(on), strong: rgbHex(strong), text: rgbHex(text), soft: `rgba(${acc.join(',')},${theme === 'light' ? 0.12 : 0.18})` };
+}
+let currentTheme = 'dark';
+function applyAccent(c) {
+  const k = accentTokens(c, currentTheme);
+  const root = document.documentElement.style;
+  root.setProperty('--accent', k.solid);
+  root.setProperty('--accent-strong', k.strong);
+  root.setProperty('--accent-text', k.text);
+  root.setProperty('--accent-soft', k.soft);
+  root.setProperty('--on-accent', k.on);
 }
 function setAccent(c, c2) {
   if (!/^#[0-9a-fA-F]{6}$/.test(c) || !/^#[0-9a-fA-F]{6}$/.test(c2)) return;
   const now = Date.now();
   C.setScalar(D(), 'settings', 'accent', c, now);
   C.setScalar(D(), 'settings', 'accent2', c2, now);
-  applyAccent(c, c2);
-  document.querySelectorAll('#colorOptions .color-opt').forEach((o) => o.classList.toggle('selected', o.dataset.c === c));
+  applyAccent(c);
+  markAccent(c);
   commitData();
 }
-function applyBgStyle(style) {
-  const darker = style === 'darker';
-  document.documentElement.style.setProperty('--bg', darker ? '#060608' : '#0a0a0f');
-  document.documentElement.style.setProperty('--bg2', darker ? '#0c0c10' : '#111118');
+function markAccent(c) {
+  document.querySelectorAll('#colorOptions .color-opt').forEach((o) => {
+    o.classList.toggle('selected', o.dataset.c === c);
+    o.setAttribute('aria-pressed', String(o.dataset.c === c));
+  });
 }
+const lightQuery = window.matchMedia('(prefers-color-scheme: light)');
+function resolveTheme(mode) {
+  return mode === 'system' ? (lightQuery.matches ? 'light' : 'dark') : mode;
+}
+const THEME_COLORS = { light: '#f4f6fb', dark: '#0b0b10', glass: '#0c0a1c' };
 function applyThemeMode(mode) {
-  const light = mode === 'light';
-  document.body.classList.toggle('theme-light', light);
-  if (!light) applyBgStyle(D().settings.bgStyle);
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light ? '#f3f6ff' : '#0a0a0f');
-  const bgSelect = document.getElementById('bgStyleSelect');
-  if (bgSelect) bgSelect.disabled = light;
+  const theme = resolveTheme(mode);
+  currentTheme = theme;
+  const body = document.body;
+  body.classList.toggle('theme-light', theme === 'light');
+  body.classList.toggle('theme-glass', theme === 'glass');
+  body.classList.toggle('bg-darker', theme === 'dark' && D().settings.bgStyle === 'darker');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', body.classList.contains('bg-darker') ? '#060608' : THEME_COLORS[theme]);
+  const bgRow = document.getElementById('bgStyleRow');
+  if (bgRow) bgRow.hidden = theme !== 'dark';
+  applyAccent(D().settings.accent);
 }
 function setThemeMode(mode) {
-  C.setScalar(D(), 'settings', 'theme', mode === 'light' ? 'light' : 'dark', Date.now());
+  C.setScalar(D(), 'settings', 'theme', ['light', 'dark', 'system', 'glass'].includes(mode) ? mode : 'dark', Date.now());
   applyThemeMode(D().settings.theme);
   commitData();
 }
 function setBgStyle(v) {
   C.setScalar(D(), 'settings', 'bgStyle', v === 'darker' ? 'darker' : 'dark', Date.now());
-  if (D().settings.theme === 'dark') applyBgStyle(D().settings.bgStyle);
+  applyThemeMode(D().settings.theme);
   commitData();
 }
 
@@ -1824,18 +2162,20 @@ function queueAmbientResumeOnInteraction() {
 }
 
 function renderSettings() {
+  renderNotifStatus();
+  window.ZenCalendarUI.renderSettings();
   const pf = PF();
   document.getElementById('ambientSoundsList').innerHTML = AMBIENT_SOUNDS.map((s) => {
     const on = pf.ambient === s.id && pf.ambientPlaying;
     return `<div class="settings-row">
       <div><div class="settings-row-label">${s.label}</div><div class="settings-row-sub">${s.desc}</div></div>
-      <button class="btn ${on ? 'btn-primary' : 'btn-ghost'}" data-action="toggle-ambient" data-id="${s.id}">${on ? 'Playing' : 'Play'}</button>
+      <button type="button" class="btn ${on ? 'btn-primary' : 'btn-ghost'}" data-action="toggle-ambient" data-id="${s.id}" aria-pressed="${on}" aria-label="${s.name}">${on ? 'Playing' : 'Play'}</button>
     </div>`;
   }).join('');
 }
 
 async function setAmbient(id, forcePlay = false) {
-  closeCtxMenu();
+  closeCtxMenu(document.getElementById('ctxMenu')?.contains(document.activeElement));
   if (!id || !AMBIENT_FILES[id]) {
     stopAmbientPlayback();
   } else if (forcePlay || PF().ambient !== id || !PF().ambientPlaying) {
@@ -1859,9 +2199,9 @@ function openAmbientPicker() {
   const current = PF().ambientPlaying ? PF().ambient : null;
   menu.dataset.mode = 'ambient';
   menu.innerHTML = AMBIENT_SOUNDS.map((s) => `
-    <div class="ctx-item ${current === s.id ? 'active' : ''}" data-action="pick-ambient" data-id="${s.id}">
-      <span>${current === s.id ? '✓' : '♪'}</span><span>${s.label}</span>
-    </div>`).join('') + '<div class="ctx-divider"></div><div class="ctx-item danger" data-action="pick-ambient" data-id="">Stop Ambient</div>';
+    <button type="button" role="menuitemradio" aria-checked="${current === s.id}" class="ctx-item ${current === s.id ? 'active' : ''}" data-action="pick-ambient" data-id="${s.id}">
+      <span aria-hidden="true">${current === s.id ? '✓' : '♪'}</span><span>${s.label}</span>
+    </button>`).join('') + '<div class="ctx-divider" role="separator"></div><button type="button" role="menuitem" class="ctx-item danger" data-action="pick-ambient" data-id="">Stop ambient</button>';
   menu.style.display = 'block';
   menu.style.visibility = 'hidden';
   const rect = badge.getBoundingClientRect();
@@ -1870,14 +2210,37 @@ function openAmbientPicker() {
   menu.style.left = `${left}px`;
   menu.style.top = `${top}px`;
   menu.style.visibility = 'visible';
+  badge.setAttribute('aria-expanded', 'true');
+  (menu.querySelector('[aria-checked="true"]') || menu.querySelector('.ctx-item'))?.focus();
 }
 
-function closeCtxMenu() {
+// Arrow keys move through the menu; Esc/Tab close it and return focus.
+function handleMenuKeys(e) {
   const menu = document.getElementById('ctxMenu');
-  if (!menu) return;
+  const items = [...menu.querySelectorAll('.ctx-item')];
+  const i = items.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    const next = e.key === 'ArrowDown' ? (i + 1) % items.length : (i - 1 + items.length) % items.length;
+    items[next].focus();
+  } else if (e.key === 'Home' || e.key === 'End') {
+    e.preventDefault();
+    items[e.key === 'Home' ? 0 : items.length - 1].focus();
+  } else if (e.key === 'Escape' || e.key === 'Tab') {
+    if (e.key === 'Escape') e.preventDefault();
+    closeCtxMenu(e.key === 'Escape');
+  }
+}
+
+function closeCtxMenu(returnFocus = false) {
+  const menu = document.getElementById('ctxMenu');
+  if (!menu || menu.style.display === 'none') return;
   menu.style.display = 'none';
   menu.style.visibility = 'hidden';
   menu.dataset.mode = '';
+  const badge = document.getElementById('ambientBadge');
+  badge?.setAttribute('aria-expanded', 'false');
+  if (returnFocus) badge?.focus();
 }
 
 function updateAmbientBadge(playing, label = '') {
@@ -1903,7 +2266,7 @@ function importData(e) {
   if (file.size > MAX_IMPORT_BYTES) { toast('That file is too large to be a ZenFlow backup.', 'error'); return; }
   const reader = new FileReader();
   reader.onerror = () => toast('Could not read the file.', 'error');
-  reader.onload = () => {
+  reader.onload = async () => {
     let imported;
     try {
       imported = C.parseBackup(String(reader.result));
@@ -1912,7 +2275,11 @@ function importData(e) {
       return;
     }
     const counts = `${imported.todos.items.length} tasks, ${imported.tracking.entries.length} time entries, ${imported.pomo.garden.length} focus sessions`;
-    if (!window.confirm(`Import this backup (${counts})?\n\nIt is merged into your current data: nothing you have now is removed, and the backup's settings are applied.`)) return;
+    if (!(await confirmDialog({
+      title: 'Import this backup?',
+      message: `It contains ${counts}. It is merged into your current data: nothing you have now is removed, and the backup's settings are applied.`,
+      confirmLabel: 'Import'
+    }))) return;
     const now = Date.now();
     store.replaceData(C.merge(D(), C.prepareImport(D(), imported, now), now));
     commitData();
@@ -1925,9 +2292,9 @@ function importData(e) {
 async function confirmReset() {
   const signedIn = isSignedIn();
   const msg = signedIn
-    ? 'Delete ALL ZenFlow data?\n\nThis permanently deletes your data on this device AND in your cloud account, then logs you out. This cannot be undone.'
-    : 'Delete all ZenFlow data stored on this device? This cannot be undone.';
-  if (!window.confirm(msg)) return;
+    ? 'This permanently deletes your data on this device and in your cloud account, then logs you out. This cannot be undone.'
+    : 'This permanently deletes all ZenFlow data stored on this device. This cannot be undone.';
+  if (!(await confirmDialog({ title: 'Delete all data?', message: msg, confirmLabel: 'Delete everything', danger: true }))) return;
   if (signedIn) {
     try {
       await sync.deleteCloudData(10000);
@@ -1948,8 +2315,23 @@ async function confirmReset() {
 // ---------------------------------------------------------------------------
 // Focus mode
 // ---------------------------------------------------------------------------
-function openFocusMode() { document.getElementById('focusModeOverlay').classList.add('active'); updatePomoDisplay(); }
-function closeFocusMode() { document.getElementById('focusModeOverlay').classList.remove('active'); }
+let focusModeOpener = null;
+function openFocusMode() {
+  const overlay = document.getElementById('focusModeOverlay');
+  focusModeOpener = document.activeElement;
+  overlay.classList.add('active');
+  document.querySelector('.app').inert = true; // keep keyboard focus inside the overlay
+  updatePomoDisplay();
+  document.getElementById('focusBtnMain')?.focus();
+}
+function closeFocusMode() {
+  const overlay = document.getElementById('focusModeOverlay');
+  if (!overlay.classList.contains('active')) return;
+  overlay.classList.remove('active');
+  document.querySelector('.app').inert = false;
+  if (focusModeOpener && focusModeOpener.isConnected) focusModeOpener.focus();
+  focusModeOpener = null;
+}
 
 // ---------------------------------------------------------------------------
 // Home hero
@@ -1959,10 +2341,9 @@ function renderHomeHero() {
   const todayMins = minsOf(C.dayTotals(stats, C.localDayKey()).secs);
   const streak = C.computeStreak(stats, Date.now()).current;
   const titleEl = document.getElementById('heroWelcomeTitle');
-  if (titleEl) titleEl.textContent = isSignedIn() ? `Welcome back, ${getDisplayNickname()}. Let's build momentum.` : 'Own your day with calm, intentional focus.';
-  const accountBtn = document.getElementById('heroAccountBtn');
-  if (accountBtn) accountBtn.style.display = isSignedIn() ? 'none' : 'inline-flex';
-  document.getElementById('heroTodayFocus').textContent = `${todayMins}m`;
+  const nextUp = window.ZenCalendarUI.nextUpText();
+  if (titleEl) titleEl.textContent = nextUp || (isSignedIn() ? `Welcome back, ${getDisplayNickname()}.` : 'Pick a task and start a session.');
+  document.getElementById('heroTodayFocus').textContent = formatFocus(todayMins * 60);
   document.getElementById('heroTotalSessions').textContent = String(C.lifetimeTotals(stats).sessions);
   document.getElementById('heroStreakDays').textContent = `${streak}d`;
 }
@@ -1972,13 +2353,12 @@ function renderHomeHero() {
 // ---------------------------------------------------------------------------
 function refreshUiFromState() {
   const s = D().settings;
-  applyAccent(s.accent, s.accent2);
-  applyThemeMode(s.theme);
+  applyThemeMode(s.theme); // also applies the accent tokens for this theme
   document.getElementById('themeModeSelect').value = s.theme;
   document.getElementById('bgStyleSelect').value = s.bgStyle;
   document.getElementById('soundSelect').value = s.sound;
   document.getElementById('volumeSlider').value = String(s.volume);
-  document.querySelectorAll('#colorOptions .color-opt').forEach((o) => o.classList.toggle('selected', o.dataset.c === s.accent));
+  markAccent(s.accent);
   renderPomoSettings();
   updatePomoDisplay();
   renderPomoLog();
@@ -2006,6 +2386,7 @@ function refreshUiFromState() {
   updateAuthCorner();
   renderAuthModal();
   updateStorageBanner();
+  window.ZenCalendarUI.onDataChanged();
 }
 
 // Re-arm timers from persisted runtime (boot, namespace switch, other tab).
@@ -2066,9 +2447,10 @@ function init() {
   window.addEventListener('resize', () => { updateViewportHeightVar(); syncResponsiveLayout(); closeCtxMenu(); });
   if (window.visualViewport) window.visualViewport.addEventListener('resize', updateViewportHeightVar);
 
-  document.querySelectorAll('.modal-overlay').forEach((m) => {
-    m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('open'); });
-  });
+  setupDialogs();
+  document.getElementById('todoItems').setAttribute('role', 'list');
+  document.getElementById('ctxMenu').addEventListener('keydown', handleMenuKeys);
+  lightQuery.addEventListener('change', () => { if (D().settings.theme === 'system') applyThemeMode('system'); });
 
   document.addEventListener('click', (e) => {
     const el = e.target.closest('[data-action]');
@@ -2078,9 +2460,11 @@ function init() {
   });
   document.addEventListener('pointerdown', unlockAudio, { capture: true, passive: true });
 
+  window.ZenCalendarUI.init();
   refreshUiFromState();
   restoreRuntime();
   initAuthIntegration();
+  if (store.recoveredCorrupt) toast('Some saved data on this device could not be read and was set aside. Other data is unaffected.', 'error');
 
   // Another tab changed our namespace: merge, then re-render.
   window.addEventListener('storage', (e) => {
@@ -2113,11 +2497,12 @@ function init() {
 
   document.addEventListener('keydown', (e) => {
     if (e.code === 'Escape') {
+      // Dialogs handle Esc natively; this covers the overlay and the menu.
       closeFocusMode();
-      closeCtxMenu();
-      document.querySelectorAll('.modal-overlay').forEach((m) => m.classList.remove('open'));
+      closeCtxMenu(true);
       return;
     }
+    if (document.querySelector('dialog[open]')) return;
     // Space on a focused control activates that control; don't also toggle.
     if (e.target.closest && e.target.closest('input, textarea, select, button, [contenteditable="true"]')) return;
     if (e.code === 'Space' && document.getElementById('page-pomodoro').classList.contains('active')) {
@@ -2126,10 +2511,6 @@ function init() {
     }
   });
 
-  setInterval(() => {
-    const p = RT().pomo;
-    document.title = p.status === 'running' ? `${C.formatTime(C.pomoRemaining(p, D().pomo, Date.now()))} — ZenFlow` : 'ZenFlow — Focus & Productivity';
-  }, 1000);
 }
 
 init();
